@@ -1,0 +1,28 @@
+{
+    "name": "blackspot/system-charges",
+    "description": "System charges allows manages local charges as: pay in subsidiary, SPEI or by agreement",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "BlackSpot\\SystemCharges\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Guillermo-Rodriguez",
+            "email": "guillermo.blackspot@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "BlackSpot\\SystemCharges\\ServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "require": {
+        "blackspot/service-integrations-container": "dev-master"
+    }
+}
