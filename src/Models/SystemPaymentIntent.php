@@ -2,6 +2,7 @@
 
 namespace BlackSpot\SystemCharges\Models;
 
+use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use Illuminate\Database\Eloquent\Model;
 
@@ -85,6 +86,6 @@ class SystemPaymentIntent extends Model
 
     public function service_integration()
     {
-        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('model'), 'service_integration_id');
+        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('model', ServiceIntegration::class), 'service_integration_id');
     }
 }

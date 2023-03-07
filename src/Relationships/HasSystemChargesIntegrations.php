@@ -86,7 +86,7 @@ trait HasSystemChargesIntegrations
 
   public function scopeWithSystemChargesServiceIntegration($query)
   {
-    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column');
+    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
     return $query->with([
       'service_integrations' => function($query){
@@ -100,7 +100,7 @@ trait HasSystemChargesIntegrations
 
   public function scopeWithSystemChargesServiceIntegrationIfActive($query)
   {
-    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column');
+    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
     return $query->with([
       'service_integrations' => function($query){

@@ -2,10 +2,10 @@
 
 namespace BlackSpot\SystemCharges;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\ServiceProvider as LaravelProvider;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 
-class ServiceProvider extends ServiceProvider
+class ServiceProvider extends LaravelProvider
 {
     public const PACKAGE_NAME = 'system-charges';
 
