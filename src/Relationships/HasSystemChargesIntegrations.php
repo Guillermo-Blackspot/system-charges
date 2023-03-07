@@ -84,6 +84,25 @@ trait HasSystemChargesIntegrations
     return $this->findSystemChargesServiceIntegration(false)->first();
   }
 
+  public function scopeIfHasSystemChargesServiceIntegration($query)
+  {
+    return $query->whereHas('service_integrations', function($query){
+      $query
+        ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+        ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+    });
+  }
+
+  public function scopeIfHasSystemChargesServiceIntegrationActive($query)
+  {
+    return $query->whereHas('service_integrations', function($query){
+      $query
+        ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+        ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME)
+        ->where('active', true);      
+    });
+  }
+
   public function scopeWithSystemChargesServiceIntegration($query)
   {
     $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
