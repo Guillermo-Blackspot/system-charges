@@ -13,25 +13,6 @@ class CreateSystemChargesTables extends Migration
      */
     public function up()
     {
-        Schema::create('system_payment_intents', function (Blueprint $table) {
-            $table->id();
-            $table->string('tracking_number')->unique();
-            $table->boolean('paid')->nullable()->default(0);
-            $table->string('amount');
-            $table->string('customer_name')->nullable();
-            $table->string('customer_email')->nullable();
-            $table->string('payment_method'); //wire_t
-            $table->string('status',10)->nullable(); 
-            $table->dateTime('due_date')->nullable(); 
-            $table->json('metadata')->nullable();
-            $table->morphs('customer');
-            $table->timestamps();
-            
-            $table->foreignId('service_integration_id')
-                ->constrained('service_integrations')
-                ->cascadeOnDelete();            
-        });
-
         Schema::create('system_subscriptions', function (Blueprint $table) {
             $table->id();
             $table->string('identified_by');
@@ -54,6 +35,32 @@ class CreateSystemChargesTables extends Migration
             $table->timestamps();
         });
 
+        Schema::create('system_payment_intents', function (Blueprint $table) {
+            $table->id();
+            $table->string('tracking_number')->unique();
+            $table->boolean('paid')->nullable()->default(0);
+            $table->string('amount');
+            $table->string('customer_name')->nullable();
+            $table->string('customer_email')->nullable();
+            $table->string('payment_method'); //wire_t
+            $table->string('status',10)->nullable(); 
+            $table->dateTime('due_date')->nullable(); 
+            $table->json('metadata')->nullable();            
+            
+            $table->morphs('owner');        
+            
+            $table->foreignId('system_subscription_id')
+                ->nullable()
+                ->constrained('system_subscriptions')
+                ->cascadeOnDelete();
+
+            $table->foreignId('service_integration_id')
+                ->constrained('service_integrations')
+                ->cascadeOnDelete();            
+
+            $table->timestamps();
+        });        
+
         Schema::create('system_subscription_items', function (Blueprint $table) {
             $table->id();
             $table->string('quantity')->nullable()->default(1);
@@ -75,16 +82,6 @@ class CreateSystemChargesTables extends Migration
      */
     public function down()
     {
-        Schema::table('system_payment_intents', function (Blueprint $table) {
-            $table->dropColumn('customer_user_id');
-            $table->dropColumn('service_integration_id');
-
-            $table->dropForeign(['customer_user_id']);            
-            $table->dropForeign(['service_integration_id']);
-        });
-
-        Schema::dropIfExists('system_payment_intents');
-
         //
         Schema::table('system_subscriptions', function (Blueprint $table) {
             $table->dropForeign(['service_integration_id']);
@@ -92,6 +89,17 @@ class CreateSystemChargesTables extends Migration
         }); 
 
         Schema::dropIfExists('system_subscriptions');
+
+        //
+        Schema::table('system_payment_intents', function (Blueprint $table) {
+            $table->dropColumn('system_subscription_id');
+            $table->dropColumn('service_integration_id');
+
+            $table->dropForeign(['system_subscription_id']);            
+            $table->dropForeign(['service_integration_id']);
+        });
+
+        Schema::dropIfExists('system_payment_intents');
 
         //
         Schema::table('system_subscription_items', function (Blueprint $table) {

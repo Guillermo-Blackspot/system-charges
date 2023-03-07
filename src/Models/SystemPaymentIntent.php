@@ -5,6 +5,7 @@ namespace BlackSpot\SystemCharges\Models;
 use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
+use BlackSpot\SystemCharges\Models\SystemSubscription;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemPaymentIntent extends Model
@@ -82,9 +83,15 @@ class SystemPaymentIntent extends Model
      * Eloquent relationships
      */
 
-    public function customer()
+    public function owner()
     {
-        return $this->morphTo('customer');   
+        return $this->morphTo('owner');
+    }
+
+
+    public function system_subscription()
+    {
+        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription', SystemSubscription::class), 'system_subscription_id');
     }
 
     public function service_integration()

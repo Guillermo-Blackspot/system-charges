@@ -346,6 +346,7 @@ class SubscriptionBuilder
         }
 
         $this->owner->createSystemPaymentIntentWith($this->serviceIntegrationId, $paymentMethod, $this->items->sum('price'), [
+            'system_subscription_id' => $subscription->id,
             'metadata' => [
                 'uses_type'                 => 'for_system_subscriptions',
                 'system_subscription_id'    => $subscription->id,
