@@ -2,9 +2,8 @@
 
 namespace BlackSpot\SystemCharges\Models;
 
-use App\Models\Charges\SystemSubscriptionItem;
-use App\Models\Subsidiary\Subsidiary;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Models\SystemSubscriptionItem;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemSubscription extends Model
@@ -72,22 +71,17 @@ class SystemSubscription extends Model
     }
 
     /**
-     * Get the subsidiary that owns the SystemSubscription
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function subsidiary()
-    {
-        return $this->belongsTo(Subsidiary::class, 'subsidiary_id');
-    }
-
-    /**
      * Get all of the system_subscription_items for the SystemSubscription
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function system_subscription_items()
     {
-        return $this->hasMany(SystemSubscriptionItem::class, 'system_subscription_id');
+        return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription_item', SystemSubscriptionItem::class), 'system_subscription_id');
+    }
+
+    public function service_integration()
+    {
+        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('model'), 'service_integration_id');
     }
 }

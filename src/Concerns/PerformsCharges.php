@@ -6,17 +6,17 @@ use Exception;
 
 trait PerformsCharges
 {
-    public function createSystemPaymentIntentForWireTransfer($serviceIntegrationId = null, $amount, $options = [])
+    public function createSystemPaymentIntentWithWireTransfer($serviceIntegrationId = null, $amount, $options = [])
     {       
         return $this->createSystemPaymentIntentWith($serviceIntegrationId, 'wire_t', $amount, $options);
     }
 
-    public function createSystemPaymentIntentForPayInSubsidiary($serviceIntegrationId = null, $amount, $options = [])
+    public function createSystemPaymentIntentWithPayInSubsidiary($serviceIntegrationId = null, $amount, $options = [])
     {       
         return $this->createSystemPaymentIntentWith($serviceIntegrationId, 'in_sub', $amount, $options);
     }
 
-    public function createSystemPaymentIntentForAgreement($serviceIntegrationId = null, $amount, $options = [])
+    public function createSystemPaymentIntentWithAgreement($serviceIntegrationId = null, $amount, $options = [])
     {
         return $this->createSystemPaymentIntentWith($serviceIntegrationId, 'agree', $amount, $options);
     }
@@ -58,7 +58,7 @@ trait PerformsCharges
             'amount'                 => $amount,
             'paid'                   => false,
             'status'                 => 'pen',
-            'customer_name'          => $this->full_name,
+            'customer_name'          => $this->full_name ?? $this->name,
             'customer_email'         => $this->email,
             'service_integration_id' => $sytemChargesServiceIntegration->id,
             'due_date'               => now()->addDays(3),

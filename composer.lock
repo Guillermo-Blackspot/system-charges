@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Guillermo-Blackspot/service-integrations-container.git",
-                "reference": "299049e227bc0486289c8fa0a4673af432462020"
+                "reference": "20cc05e4d4239f66276981d51ca73c9895df14c7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Guillermo-Blackspot/service-integrations-container/zipball/299049e227bc0486289c8fa0a4673af432462020",
-                "reference": "299049e227bc0486289c8fa0a4673af432462020",
+                "url": "https://api.github.com/repos/Guillermo-Blackspot/service-integrations-container/zipball/20cc05e4d4239f66276981d51ca73c9895df14c7",
+                "reference": "20cc05e4d4239f66276981d51ca73c9895df14c7",
                 "shasum": ""
             },
             "default-branch": true,
@@ -49,7 +49,7 @@
                 "issues": "https://github.com/Guillermo-Blackspot/service-integrations-container/issues",
                 "source": "https://github.com/Guillermo-Blackspot/service-integrations-container/tree/master"
             },
-            "time": "2023-03-06T23:16:25+00:00"
+            "time": "2023-03-06T23:54:02+00:00"
         }
     ],
     "packages-dev": [],

@@ -2,7 +2,8 @@
 
 namespace BlackSpot\SystemCharges\Relationships;
 
-use App\Models\Morphs\ServiceIntegration;
+use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 
 trait HasSystemChargesIntegrations
 {
@@ -85,22 +86,26 @@ trait HasSystemChargesIntegrations
 
   public function scopeWithSystemChargesServiceIntegration($query)
   {
+    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column');
+
     return $query->with([
-        'service_integrations' => function($query){
-          $query
-            ->select('id','payload','owner_id','owner_type','active','name','short_name')
-            ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
-            ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
-        }
+      'service_integrations' => function($query){
+        $query
+          ->select('id',$payloadColumn,'owner_id','owner_type','active','name','short_name')
+          ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+          ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+      }
     ]);
   }
 
   public function scopeWithSystemChargesServiceIntegrationIfActive($query)
   {
+    $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column');
+
     return $query->with([
       'service_integrations' => function($query){
         $query
-          ->select('id','payload','owner_id','owner_type','active','name','short_name')
+          ->select('id',$payloadColumn,'owner_id','owner_type','active','name','short_name')
           ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
           ->where('short_name',ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME)
           ->where('active', true);

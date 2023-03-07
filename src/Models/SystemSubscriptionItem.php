@@ -2,8 +2,8 @@
 
 namespace BlackSpot\SystemCharges\Models;
 
-use App\Models\Charges\SystemSubscription;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Models\SystemSubscription;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemSubscriptionItem extends Model
@@ -66,6 +66,6 @@ class SystemSubscriptionItem extends Model
      */
     public function system_subscription()
     {
-        return $this->belongsTo(SystemSubscription::class, 'sytem_subscription_id');
+        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription', SystemSubscription::class), 'sytem_subscription_id');
     }
 }

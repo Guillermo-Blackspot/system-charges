@@ -2,22 +2,11 @@
 
 namespace BlackSpot\SystemCharges\Models;
 
-use App\Actions\Charges\SystemPaymentIntent\GenerateTrackingNumber;
-use App\Events\Quotes\SystemPaymentIntentCreated;
-use App\Models\Morphs\ActionsHistory;
-use App\Models\Sales\Quote;
-use App\Models\Morphs\ServiceIntegration;
-use App\Models\User;
-use Carbon\Carbon;
-use DateTime;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use Illuminate\Database\Eloquent\Model;
-use Kirschbaum\PowerJoins\PowerJoins;
 
 class SystemPaymentIntent extends Model
 {
-    use PowerJoins;
-    
     /**
      * The table associated with the model.
      *
@@ -85,53 +74,17 @@ class SystemPaymentIntent extends Model
         }
     }
 
-    // public function setDueDateAttribute($value = null)
-    // {
-    //     if ($value != null) {
-    //         $this->attributes['due_date'] = ;
-    //     }else{
-    //         $this->attributes['due_date'] = null;
-    //     }
-    //}
-
-    /**
-     * Resolve the power join type using alias
-     */
-    private function resolvePowerJoinType($type)
-    {
-        if ($type == 'left') {
-            return 'leftJoinRelationshipUsingAlias';
-        }elseif ($type == 'right') {
-            return 'rightJoinRelationshipUsingAlias';
-        }else {
-            return 'joinRelationshipUsingAlias';
-        }
-    }
-    
-    /**
-     * Join the customer user related to the quotation 
-     */
-    public function scopeJoinCustomerUser($query, $joinType = 'inner')
-    {
-        return $query->selectRaw('
-            cus_u.id as customer_user_id,
-            cus_u.email as customer_user_email,
-            CONCAT(cus_u.name," ",cus_u.last_name) as customer_user_full_name
-        ')
-        ->{$this->resolvePowerJoinType($joinType)}('customer_user','cus_u');
-    }
-
     /**
      * Eloquent relationships
      */
 
-    public function customer_user()
+    public function customer()
     {
-        return $this->belongsTo(User::class, 'customer_user_id');
+        return $this->morphTo('customer');   
     }
 
     public function service_integration()
     {
-        return $this->belongsTo(ServiceIntegration::class, 'service_integration_id');
+        return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('model'), 'service_integration_id');
     }
 }

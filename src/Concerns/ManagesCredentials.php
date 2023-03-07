@@ -2,6 +2,9 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
+use BlackSpot\ServiceIntegrationsContainer\Concerns\ServiceIntegrationFinder;
+use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -14,10 +17,12 @@ use Illuminate\Support\Facades\DB;
  */
 trait ManagesCredentials
 {
-    private $systemChargesServiceIntegrationRecentlyFetched = null;
+    use ServiceIntegrationFinder;
+
+    protected $systemChargesServiceIntegrationRecentlyFetched = null;
 
     /**
-     * Get the stripe service integration query
+     * Get the system charges service integration query
      * 
      * @param int|null $serviceIntegrationId
      * 
@@ -25,31 +30,13 @@ trait ManagesCredentials
      */
     protected function getSystemChargesServiceIntegrationQuery($serviceIntegrationId = null)
     {
-        $serviceIntegrationModel     = config('stripe-multiple-accounts.relationship_models.stripe_accounts');
-        $serviceIntegrationTableName = $serviceIntegrationModel::TABLE_NAME;
-        $query                       = DB::table($serviceIntegrationTableName)
-                                        ->where('name', 'System_Charges')
-                                        ->where('short_name', 'sys_ch');
-
-        if (!is_null($serviceIntegrationId)) {
-            $query = $query->where('id', $serviceIntegrationId);
-        }elseif (isset($this->id) && self::class == config('stripe-multiple-accounts.relationship_models.stripe_accounts')) {
-            $query = $query->where('id', $this->id);
-        }else if (isset($this->service_integration_id)){
-            $query = $query->where('id', $this->service_integration_id);
-        }else if (method_exists($this, 'getSystemChargesServiceIntegrationId')){
-            $query = $query->where('id', $this->getSystemChargesServiceIntegrationId());
-        }else if (method_exists($this, 'getSystemChargesServiceIntegrationOwnerId') && method_exists($this,'getSystemChargesServiceIntegrationOwnerType')){
-            $query = $query->where('owner_type', $this->getSystemChargesServiceIntegrationOwnerType())->where('owner_id', $this->getSystemChargesServiceIntegrationOwnerId());
-        }else{
-            $query = $query->where('owner_type', 'not-exists-expecting-null');
-        }        
-
-        return $query;
+        return $this->getServiceIntegrationQuery($serviceIntegrationId, ['getSystemChargesServiceIntegrationId', 'getSystemChargesServiceIntegrationOwnerType'])
+                    ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+                    ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
     }
 
     /**
-     * Get the related stripe account where the user belongs to
+     * Get the related system charges account where the user belongs to
      * 
      * @param int|null $serviceIntegrationId
      * 
@@ -62,14 +49,12 @@ trait ManagesCredentials
         }
                 
         // ServiceIntegration.php (Model)
-        if (isset($this->id) && self::class == config('stripe-multiple-accounts.relationship_models.stripe_accounts')) {
+        if (isset($this->id) && self::class == ServiceIntegrationsContainerProvider::getFromConfig('model')) {
             $service = (object) $this->toArray();
         }else{
             $query = $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId);
 
-            if (is_null($query)) {
-                return ;
-            }
+            if (is_null($query)) return ;
             
             $service = $query->first();
         }
@@ -78,7 +63,7 @@ trait ManagesCredentials
             return ;
         }
 
-        $payloadColumn = 'payload';
+        $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_colum','payload');
 
         if (isset($service->{$payloadColumn})) {
             $service->{$payloadColumn.'_decoded'} = json_decode($service->{$payloadColumn}, true);
@@ -117,8 +102,7 @@ trait ManagesCredentials
      */
     public function getRelatedSystemChargesPayloadServiceIntegration($serviceIntegrationId = null)
     {
-        $payloadColumn = 'payload';
-
+        $payloadColumn     = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
         $stripeIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
 
         if (is_null($stripeIntegration)) {

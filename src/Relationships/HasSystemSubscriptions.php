@@ -2,7 +2,8 @@
 
 namespace BlackSpot\SystemCharges\Relationships;
 
-use App\Models\Charges\SystemSubscription;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Models\SystemSubscription;
 
 trait HasSystemSubscriptions
 {
@@ -50,6 +51,6 @@ trait HasSystemSubscriptions
   */
   public function system_subscriptions()
   {
-    return $this->morphMany(SystemSubscription::class, 'owner');
+    return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription', SystemSubscription::class), 'owner');
   }
 }

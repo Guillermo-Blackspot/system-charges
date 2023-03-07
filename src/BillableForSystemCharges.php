@@ -2,15 +2,17 @@
 
 namespace BlackSpot\SystemCharges;
 
-use App\Services\Vendor\SystemCharges\Concerns\ManagesSubscriptions;
-use App\Services\Vendor\SystemCharges\Concerns\ManagesCredentials;
-use App\Services\Vendor\SystemCharges\Concerns\PerformsCharges;
-use App\Services\Vendor\SystemCharges\Relationships\HasSystemSubscriptions;
+use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
+use BlackSpot\SystemCharges\Concerns\ManagesSubscriptions;
+use BlackSpot\SystemCharges\Concerns\PerformsCharges;
+use BlackSpot\SystemCharges\Relationships\HasSystemPaymentIntents;
+use BlackSpot\SystemCharges\Relationships\HasSystemSubscriptions;
 use Exception;
 
 trait BillableForSystemCharges
 {
     use ManagesCredentials;
+    use HasSystemPaymentIntents;
     use PerformsCharges;
     use ManagesSubscriptions;
     use HasSystemSubscriptions;

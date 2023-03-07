@@ -102,24 +102,29 @@ class SubscriptionBuilder
      */
     protected $callbackToMapItemsBefore = null;
 
+    protected $serviceIntegrationId = null;
+
     /**
      * Constructor
      * 
      * @param \\App\Services\Vendor\SystemCharges\IsBillableToSystemCharges|\Illuminate\Database\Eloquent\Model  $owner
      * @param string $identifier
      * @param string $name
+     * @param int|null $serviceIntegrationId
      * @param Model|Illuminate\Database\Eloquent\Collection
      */
-    public function __construct(EloquentModel $owner, $identifier, $name, $items)
+    public function __construct(EloquentModel $owner, $identifier, $name, $items, $serviceIntegrationId = null)
     {
         $this->owner                  = $owner;
         $this->subscriptionIdentifier = $identifier;
         $this->name                   = $name;
         $this->items                  = $items instanceof EloquentModel ? Collection::make([$items]) : $items;
 
-        if ($this->owner->subsidiary_id == null){
+        if ($this->owner->getSystemChargesServiceIntegration($serviceIntegrationId) == null){
             return ;
         }
+
+        $this->serviceIntegrationId = $serviceIntegrationId ?? $this->owner->getSystemChargesServiceIntegration()->id;
         
         if (! $this->validItems()) {
             return ;
@@ -311,9 +316,19 @@ class SubscriptionBuilder
      */
     protected function createSubscription($paymentMethod)
     {
-        $subscription = $this->owner->system_subscriptions()->create(
-            $this->buildPayload()
-        );
+        $subscription = $this->owner->system_subscriptions()->create([
+            'identified_by'          => $this->subscriptionIdentifier,
+            'name'                   => $this->name,            
+            'description'            => $this->description,            
+            'status'                 => \App\Models\Charges\SystemSubscription::STATUS_INCOMPLETE,
+            'billing_cycle_anchor'   => $this->getBillingCycleAnchorForPayload(),
+            'trial_ends_at'          => $this->getTrialEndForPayload(),
+            'current_period_start'   => $this->getBillingCycleAnchorForPayload(),
+            'current_period_ends_at' => $this->getCurrentPeriodEndsAtForPayload(),
+            'cancel_at'              => $this->cancelAt,
+            'metadata'               => $this->metadata,
+            'service_integration_id' => $this->serviceIntegrationId
+        ]);
         
         $subscriptionItemsMetadata = [];
 
@@ -330,7 +345,7 @@ class SubscriptionBuilder
             $subscriptionItemsMetadata[] = ['id' => $subItem->id];
         }
 
-        $this->owner->createSystemPaymentIntentWith($paymentMethod, $this->items->sum('price'), [
+        $this->owner->createSystemPaymentIntentWith($this->serviceIntegrationId, $paymentMethod, $this->items->sum('price'), [
             'metadata' => [
                 'uses_type'                 => 'for_system_subscriptions',
                 'system_subscription_id'    => $subscription->id,
@@ -340,29 +355,6 @@ class SubscriptionBuilder
 
         return $subscription;
     }
-
-    /**
-     * Build the payload for subscription creation.
-     *
-     * @return array
-     */
-    protected function buildPayload()
-    {
-        return [
-            'identified_by'          => $this->subscriptionIdentifier,
-            'name'                   => $this->name,            
-            'description'            => $this->description,            
-            'status'                 => \App\Models\Charges\SystemSubscription::STATUS_INCOMPLETE,
-            'billing_cycle_anchor'   => $this->getBillingCycleAnchorForPayload(),
-            'trial_ends_at'          => $this->getTrialEndForPayload(),
-            'current_period_start'   => $this->getBillingCycleAnchorForPayload(),
-            'current_period_ends_at' => $this->getCurrentPeriodEndsAtForPayload(),
-            'cancel_at'              => $this->cancelAt,
-            'metadata'               => $this->metadata,
-            'subsidiary_id'          => $this->owner->subsidiary_id
-        ];
-    }
-
 
     public function getCurrentPeriodEndsAtForPayload()
     {
