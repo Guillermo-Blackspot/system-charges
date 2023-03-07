@@ -4,10 +4,13 @@ namespace BlackSpot\SystemCharges\Models;
 
 use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemPaymentIntent extends Model
 {
+    use ManagesCredentials;
+    
     /**
      * The table associated with the model.
      *

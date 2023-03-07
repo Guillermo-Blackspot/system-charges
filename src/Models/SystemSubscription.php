@@ -4,11 +4,14 @@ namespace BlackSpot\SystemCharges\Models;
 
 use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
 use BlackSpot\SystemCharges\Models\SystemSubscriptionItem;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemSubscription extends Model
 {
+    use ManagesCredentials;
+    
     /**
      * The table associated with the model.
      *

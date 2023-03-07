@@ -89,7 +89,7 @@ trait HasSystemChargesIntegrations
     $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
     return $query->with([
-      'service_integrations' => function($query){
+      'service_integrations' => function($query) use ($payloadColumn){
         $query
           ->select('id',$payloadColumn,'owner_id','owner_type','active','name','short_name')
           ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
@@ -103,7 +103,7 @@ trait HasSystemChargesIntegrations
     $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
     return $query->with([
-      'service_integrations' => function($query){
+      'service_integrations' => function($query) use ($payloadColumn){
         $query
           ->select('id',$payloadColumn,'owner_id','owner_type','active','name','short_name')
           ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
