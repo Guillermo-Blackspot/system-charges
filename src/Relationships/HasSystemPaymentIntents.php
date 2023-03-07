@@ -28,6 +28,6 @@ trait HasSystemPaymentIntents
   */
   public function system_payment_intents()
   {
-    return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'customer');
+    return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'owner');
   }
 }
