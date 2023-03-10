@@ -38,7 +38,7 @@ class SubscriptionUtils
      * 
      * @return \Illuminate\Support\Collection|\Illuminate\Database|Eloquent\Collection
      */
-    public function subscriptionItemsToCollection($items)
+    public static function subscriptionItemsToCollection($items)
     {
         if ($items === null) {
             return Collection::make([]);
@@ -62,9 +62,9 @@ class SubscriptionUtils
      * 
      * @return \DateTimeInterface
      */
-    public function resolveBillingCycleAnchorFromFirstItem($items)
+    public static function resolveBillingCycleAnchorFromFirstItem($items)
     {
-        $items = $this->subscriptionItemsToCollection($items);
+        $items = static::subscriptionItemsToCollection($items);
 
         if ($items === null) {
             return ;
