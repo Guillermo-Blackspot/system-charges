@@ -233,10 +233,14 @@ class SubscriptionBuilder
      */
     public function anchorBillingCycleOn($date)
     {
-        if ($date != null && ! ($date instanceof \DateTimeInterface)) {
+        if ($date != null && ! ($date instanceof DateTimeInterface)) {
             $date = Carbon::parse($date);
         }
 
+        if ($date instanceof DateTimeInterface && ($date->isPast() && !$date->isToday())) {
+            throw new Exception("Can not create subscriptions with a past date", 1);
+        }
+    
         $this->billingCycleAnchor = $date;
 
         return $this;
@@ -547,8 +551,8 @@ class SubscriptionBuilder
         if (is_int($this->trialExpires)) {
             $trialExpires = $this->getBillingCycleAnchorForPayload()->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
         }else if ($this->trialExpires instanceof DateTimeInterface) {           
-            if ($this->getBillingCycleAnchorForPayload()->isFuture()) {                
-                $trialExpires = $this->getBillingCycleAnchorForPayload()->addDays($this->trialExpires); // For a date (DateTimeInterface) from the future billing cycle anchor
+            if ($this->trialExpires->gt($this->getBillingCycleAnchorForPayload())){    
+                $trialExpires = $this->trialExpires;
             }
         }
 

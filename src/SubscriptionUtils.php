@@ -3,6 +3,7 @@
 namespace BlackSpot\SystemCharges;
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 class SubscriptionUtils
@@ -27,6 +28,61 @@ class SubscriptionUtils
             $billingCycleAnchor = Carbon::now();
         }
 
+        return $billingCycleAnchor;
+    }
+
+    /**
+     * Convert the input subscription items to collection
+     * 
+     * @param \Illuminate\Database\Eloquent\Model|\Illuminate\Database|Eloquent\Collection
+     * 
+     * @return \Illuminate\Support\Collection|\Illuminate\Database|Eloquent\Collection
+     */
+    public function subscriptionItemsToCollection($items)
+    {
+        if ($items === null) {
+            return Collection::make([]);
+        }
+
+        if ($items instanceof EloquentModel) {
+            $items = Collection::make([$items]);
+        } else if (is_array($items)) {
+            $items = Collection::make($items);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Get the billing cycle anchor from the subscription items
+     * 
+     * if the billing_cycle_anchor is past date or not exists, returns now() for prevents throws
+     * 
+     * @param \Illuminate\Database\Eloquent\Model|\Illuminate\Database|Eloquent\Collection  $items
+     * 
+     * @return \DateTimeInterface
+     */
+    public function resolveBillingCycleAnchorFromFirstItem($items)
+    {
+        $items = $this->subscriptionItemsToCollection($items);
+
+        if ($items === null) {
+            return ;
+        }
+
+        if ($items->isEmpty()) {
+            return ;
+        }
+
+        $firstItem          = $items->first();
+        $billingCycleAnchor = Carbon::now();
+    
+        if (isset($firstItem->subscription_settings['billing_cycle_anchor'])) {
+            $billingCycleAnchor = Carbon::parse($firstItem->subscription_settings['billing_cycle_anchor'])->isPast() 
+                                    ? Carbon::now() 
+                                    : Carbon::parse($firstItem->subscription_settings['billing_cycle_anchor']);
+        }
+        
         return $billingCycleAnchor;
     }
 
