@@ -19,18 +19,24 @@ class CreateSystemChargesTables extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('status'); //
-            $table->dateTime('trial_ends_at')->nullable();
-            $table->integer('billing_cycles')->nullable()->comment('Null is forever'); 
+            $table->integer('recurring_interval_count')->nullable()->default(1)->comment('Every'); // every $one week or every $two months, etc
+            $table->string('recurring_interval', 15)->comment('day,week,month,year'); // week, month, year
+            $table->dateTime('trial_ends_at')->nullable()->comment('Null has not trial period');
+            $table->integer('expected_invoices')->nullable()->comment('Null is forever');
             $table->dateTime('billing_cycle_anchor');
-            $table->dateTime('current_period_start')->nullable();
-            $table->dateTime('current_period_ends_at')->nullable();
-            $table->dateTime('cancel_at')->nullable();
+            $table->dateTime('current_period_start');
+            $table->dateTime('current_period_ends_at');
+            $table->dateTime('cancel_at')->nullable()->comment('Null is never');            
+            $table->dateTime('keep_products_active_until')->nullable()->comment('Null is forever');            
+            $table->string('owner_name'); // when the owner relationship is deleted preserve the owner name in the record
+            $table->string('owner_email'); // when the owner relationship is deleted preserve the owner email in the record            
             $table->json('metadata')->nullable();
-            $table->morphs('owner'); // \App\Models\User
-
+            $table->nullableMorphs('owner'); // \App\Models\User
+            
             $table->foreignId('service_integration_id')
+                ->nullable()
                 ->constrained('service_integrations')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
             $table->timestamps();
         });
@@ -40,23 +46,26 @@ class CreateSystemChargesTables extends Migration
             $table->string('tracking_number')->unique();
             $table->boolean('paid')->nullable()->default(0);
             $table->string('amount');
-            $table->string('customer_name')->nullable();
-            $table->string('customer_email')->nullable();
             $table->string('payment_method'); //wire_t
             $table->string('status',10)->nullable(); 
             $table->dateTime('due_date')->nullable(); 
             $table->json('metadata')->nullable();            
+            $table->string('subscription_identifier')->nullable(); // when the system_subscription relationship is deleted preserve the subscription identifier in the record
+            $table->string('subscription_name')->nullable(); // when the system_subscription relationship is deleted preserve the subscription name in the record
+            $table->string('owner_name');
+            $table->string('owner_email');
             
-            $table->morphs('owner');        
-            
+            $table->nullableMorphs('owner');       
+
             $table->foreignId('system_subscription_id')
                 ->nullable()
                 ->constrained('system_subscriptions')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
             $table->foreignId('service_integration_id')
+                ->nullable()
                 ->constrained('service_integrations')
-                ->cascadeOnDelete();            
+                ->nullOnDelete();            
 
             $table->timestamps();
         });        
@@ -65,8 +74,11 @@ class CreateSystemChargesTables extends Migration
             $table->id();
             $table->string('quantity')->nullable()->default(1);
             $table->string('price')->nullable();
-            $table->morphs('model'); // \App\Models\Programs\Program
+            $table->string('model_name'); // when the model relationship is deleted preserve the model name in the record
+            $table->string('model_class'); // when the model relationship is deleted preserve the model class in the record
+            $table->nullableMorphs('model'); // \App\Models\Programs\Program
 
+            // if the subscription is deleted, preserve the item is not necessary
             $table->foreignId('system_subscription_id')
                 ->constrained('system_subscriptions')
                 ->cascadeOnDelete();

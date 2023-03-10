@@ -58,10 +58,10 @@ trait PerformsCharges
             'amount'                 => $amount,
             'paid'                   => false,
             'status'                 => 'pen',
-            'customer_name'          => $this->full_name ?? $this->name,
-            'customer_email'         => $this->email,
-            'service_integration_id' => $sytemChargesServiceIntegration->id,
+            'owner_name'             => $this->full_name ?? $this->name,
+            'owner_email'            => $this->email,
             'due_date'               => now()->addDays(3),
+            'service_integration_id' => $sytemChargesServiceIntegration->id,
         ], $options);
 
         return $this->system_payment_intents()->create($data);

@@ -2,6 +2,8 @@
 
 namespace BlackSpot\SystemCharges;
 
+use BlackSpot\SystemCharges\Models\SystemSubscription;
+use BlackSpot\SystemCharges\SubscriptionUtils;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Exception;
@@ -102,7 +104,49 @@ class SubscriptionBuilder
      */
     protected $callbackToMapItemsBefore = null;
 
+    /**
+     * The system charges service integration that provides this subscription
+     *
+     * @var int
+     */
     protected $serviceIntegrationId = null;
+
+    /**
+     * Define the days or date when the product still active
+     *
+     * @var int|\DateTimeInterface
+     */
+    protected $keepProductsActiveUntil = null;
+
+    /**
+     * Recurring interval count to combine with the recurring interval
+     * 
+     * every $one month , every $two days, etc..
+     *
+     * @var int
+     */
+    protected $recurringIntervalCount = 1;
+
+    /**
+     * Recurring interval
+     * 
+     * day, week, month or year
+     * 
+     * @var string
+     */
+    protected $recurringInterval = null;
+
+    
+    /**
+     * The expected invoices to reach 
+     * 
+     * after reached the subscription must be canceled
+     *
+     * null is a forever subscription 
+     * 
+     * @var int|null
+     */
+    protected $expectedInvoices = null;
 
     /**
      * Constructor
@@ -119,13 +163,18 @@ class SubscriptionBuilder
         $this->subscriptionIdentifier = $identifier;
         $this->name                   = $name;
         $this->items                  = $items instanceof EloquentModel ? Collection::make([$items]) : $items;
+        $this->serviceIntegrationId   = optional($this->owner->getSystemChargesServiceIntegration($serviceIntegrationId))->id;
 
-        if ($this->owner->getSystemChargesServiceIntegration($serviceIntegrationId) == null){
-            return ;
+        if ($this->serviceIntegrationId === null){
+            return ; // unknow subsidiary
         }
 
-        $this->serviceIntegrationId = $serviceIntegrationId ?? $this->owner->getSystemChargesServiceIntegration()->id;
-        
+        $existingRelatedSubscription = $this->owner->findSystemSubscriptionByIdentifier($this->serviceIntegrationId, $this->subscriptionIdentifier);
+
+        if ($existingRelatedSubscription) {
+            return $existingRelatedSubscription; // exists
+        }
+
         if (! $this->validItems()) {
             return ;
         }        
@@ -159,6 +208,24 @@ class SubscriptionBuilder
     }
 
     /**
+     * The billing cycles to invoice
+     *
+     * once the cycles is reached the subscription will be canceled
+     * stopping the invoice generations
+     * 
+     * we struggly recommend to you, use the keepProductsActiveUntil() if you have an
+     * action after all the invoices were paid and the subscription was canceled
+     * 
+     * @return $this
+     */
+    public function invoiceUntilReaching($expectedInvoices)
+    {
+        $this->expectedInvoices = $expectedInvoices;
+
+        return $this;
+    }
+
+    /**
      * Change the billing cycle anchor on a subscription creation.
      *
      * @param  \DateTimeInterface|int  $date
@@ -166,6 +233,10 @@ class SubscriptionBuilder
      */
     public function anchorBillingCycleOn($date)
     {
+        if ($date != null && ! ($date instanceof \DateTimeInterface)) {
+            $date = Carbon::parse($date);
+        }
+
         $this->billingCycleAnchor = $date;
 
         return $this;
@@ -218,7 +289,11 @@ class SubscriptionBuilder
      * @return $this
      */
     public function cancelAt($date)
-    {
+    {       
+        if ($date != null && ! ($date instanceof \DateTimeInterface)) {
+            $date = Carbon::parse($date);
+        }
+
         $this->cancelAt = $date;
 
         return $this;
@@ -232,9 +307,7 @@ class SubscriptionBuilder
      */
     public function trialDays($trialDays)
     {
-        if ($trialDays != null || $trialDays != 0) {
-            $this->trialExpires = Carbon::now()->addDays($trialDays);
-        }
+        $this->trialExpires = (int) $trialDays;
 
         return $this;
     }
@@ -247,16 +320,69 @@ class SubscriptionBuilder
      */
     public function trialUntil($trialUntil)
     {
+        if ($trialUntil != null && ! ($trialUntil instanceof \DateTimeInterface)) {
+            $trialUntil = Carbon::parse($trialUntil);
+        }
+
         $this->trialExpires = $trialUntil;
 
         return $this;
     }
 
     /**
+     * Define the days when the products still active after the subscription is cancelled of ended
+     * 
+     * Days or a concrete date, when null is received the products still active forever
+     * 
+     * @param null|int|\DateTimeInterface $daysOrDate
+     * 
+     * @return $this
+     */
+    public function keepProductsActiveUntil($daysOrDate)
+    {
+        $this->keepProductsActiveUntil = $daysOrDate;
+
+        return $this;
+    }
+
+    /**
+     * Interval
+     *
+     * @param int $interval
+     * @return $this
+     * 
+     * @throws \Exception
+     */
+    public function interval($interval)
+    {
+        if (!in_array($interval, ['day','week','month','year'])) {
+            throw new Exception("Unknow interval {$interval}, choose one of [day,week,month or year]", 1);
+        }
+
+        $this->recurringInterval = $interval;
+
+        return $this;
+    }
+
+    /**
+     * Interval count
+     *
+     * @param int $intervalCount
+     * @return $this
+     */
+    public function intervalCount($intervalCount)
+    {
+        $this->recurringIntervalCount = (int) ($intervalCount ?? 1);
+
+        return $this;
+    }
+
+
+    /**
      * Map the items before to send to stripe
      *
      * @param Closure $callback
-     * @return void
+     * @return $this
      */
     public function mapItems(Closure $callback)
     {
@@ -317,80 +443,93 @@ class SubscriptionBuilder
     protected function createSubscription($paymentMethod)
     {
         $subscription = $this->owner->system_subscriptions()->create([
-            'identified_by'          => $this->subscriptionIdentifier,
-            'name'                   => $this->name,            
-            'description'            => $this->description,            
-            'status'                 => \App\Models\Charges\SystemSubscription::STATUS_INCOMPLETE,
-            'billing_cycle_anchor'   => $this->getBillingCycleAnchorForPayload(),
-            'trial_ends_at'          => $this->getTrialEndForPayload(),
-            'current_period_start'   => $this->getBillingCycleAnchorForPayload(),
-            'current_period_ends_at' => $this->getCurrentPeriodEndsAtForPayload(),
-            'cancel_at'              => $this->cancelAt,
-            'metadata'               => $this->metadata,
-            'service_integration_id' => $this->serviceIntegrationId
+            'identified_by'              => $this->subscriptionIdentifier,
+            'name'                       => $this->name,
+            'description'                => $this->description,
+            'status'                     => SystemSubscription::STATUS_INCOMPLETE,
+            'billing_cycle_anchor'       => $this->getBillingCycleAnchorForPayload(),
+            'current_period_start'       => $this->getBillingCycleAnchorForPayload(),
+            'current_period_ends_at'     => $this->getCurrentPeriodEndsAtForPayload(),
+            'trial_ends_at'              => $this->getTrialEndForPayload(),
+            'cancel_at'                  => $this->getCancelAtForPayload(),
+            'keep_products_active_until' => $this->getKeepProductsActiveUntilForPayload(),            
+            'recurring_interval'         => $this->getIntervalForPayload(),
+            'recurring_interval_count'   => $this->recurringIntervalCount,
+            'expected_invoices'          => $this->expectedInvoices,
+            'metadata'                   => $this->metadata,
+            'owner_name'                 => $this->owner->full_name ?? $this->owner->name,
+            'owner_email'                => $this->owner->email,
+            'service_integration_id'     => $this->serviceIntegrationId
         ]);
         
-        $subscriptionItemsMetadata = [];
-
-        /** @var \Stripe\SubscriptionItem $item */
-        foreach ($this->items as $item) {
-            $subItem = $subscription->system_subscription_items()->updateOrcreate([
-                'model_id'   => $item->id,
-                'model_type' => get_class($item)
-            ],[
-                'quantity' => 1,
-                'price'    => $item->price,
-            ]);
-
-            $subscriptionItemsMetadata[] = ['id' => $subItem->id];
-        }
-
-        $this->owner->createSystemPaymentIntentWith($this->serviceIntegrationId, $paymentMethod, $this->items->sum('price'), [
-            'system_subscription_id' => $subscription->id,
-            'metadata' => [
-                'uses_type'                 => 'for_system_subscriptions',
-                'system_subscription_id'    => $subscription->id,
-                'system_subscription_items' => $subscriptionItemsMetadata,
-            ]
-        ]);
-
+        $this->createSubscriptionItems($subscription);
+        
         return $subscription;
     }
 
-    public function getCurrentPeriodEndsAtForPayload()
-    {
-        $recurringInterval = $this->items->first()->subscription_settings['interval'];
-
-        if (!$recurringInterval) {
-            throw new Exception("Unknown Subscription Interval", 1);            
-        }
-
-        $carbonFunction = 'add'.(ucfirst($recurringInterval));
-
-        // Calculating the renew date
-        return $this->getBillingCycleAnchorForPayload()->{$carbonFunction}();
-    }
-
-    public function getBillingCycleAnchorForPayload()
-    {
-        return $this->billingCycleAnchor ?? now();
-    }
-
     /**
-     * Build the items for the subscription items
+     * Create the subscription items
      *
-     * @return array
+     * @param \BlackSpot\SystemCharges\SystemSubscription  $subscription
+     * @return void
      */
-    protected function getItemsForPayload()
+    protected function createSubscriptionItems($subscription)
     {
-        $items = $this->items;
+        $agreggatedItems = [];
 
-        if ($this->callbackToMapItemsBefore instanceof Closure) {
-            $items = $items->map($this->callbackToMapItemsBefore);
+        /** @var \Stripe\SubscriptionItem $item */
+        foreach ($this->items as $item) {
+            $modelClass = get_class($item);        
+            $subItem    = $subscription->system_subscription_items()->updateOrcreate(
+                            [ 'model_id' => $item->id, 'model_type' => $modelClass],
+                            [ 
+                                'quantity'    => 1,         
+                                'price  '     => $item->price,
+                                'model_name'  => $item->name,
+                                'model_class' => $modelClass,
+
+                            ]
+                        );
+
+            $agreggatedItems[] = ['id' => $subItem->id];
         }
 
-        return $items->values()->all();
+        $this->owner->createSystemPaymentIntentWith($this->serviceIntegrationId, $paymentMethod, $this->items->sum('price'), [
+            'system_subscription_id'  => $subscription->id,
+            'subscription_identifier' => $subscription->identified_by,
+            'subscription_name'       => $subscription->name,
+            'owner_name'              => $this->owner->full_name ? $this->owner->name,
+            'owner_emai'              => $this->owner->email,
+            'metadata' => [
+                'uses_type'                 => 'for_system_subscriptions',
+                'system_subscription_id'    => $subscription->id,
+                'system_subscription_items' => $agreggatedItems,
+            ]
+        ]);
+
     }
+
+    
+
+    // /**
+    //  * Build the items for the subscription items
+    //  *
+    //  * @return array
+    //  */
+    // protected function getItemsForPayload()
+    // {
+    //     if (is_array($this->items)) {
+    //         return $this->items; // Was processed
+    //     }
+
+    //     $items = $this->items;
+
+    //     if ($this->callbackToMapItemsBefore instanceof Closure) {
+    //         $items = $items->map($this->callbackToMapItemsBefore);
+    //     }
+
+    //     return $items->values()->all();
+    // }
 
     /**
      * Get the trial ending date for the Stripe payload.
@@ -400,13 +539,127 @@ class SubscriptionBuilder
     protected function getTrialEndForPayload()
     {
         if ($this->skipTrial) {
-            return now();
+            return null; // has not trial days
         }
 
-        if ($this->trialExpires instanceof DateTimeInterface) {
-            return $this->trialExpires->getTimestamp();
+        $trialExpires = null;  // By default subscriptions not has trial days
+
+        if (is_int($this->trialExpires)) {
+            $trialExpires = $this->getBillingCycleAnchorForPayload()->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
+        }else if ($this->trialExpires instanceof DateTimeInterface) {           
+            if ($this->getBillingCycleAnchorForPayload()->isFuture()) {                
+                $trialExpires = $this->getBillingCycleAnchorForPayload()->addDays($this->trialExpires); // For a date (DateTimeInterface) from the future billing cycle anchor
+            }
         }
 
-        return $this->trialExpires;
+        return $trialExpires;
     }    
+
+    /**
+     * Determine the date until the related products still active
+     *
+     * @return DateTimeInterface|null
+     */
+    protected function getKeepProductsActiveUntilForPayload()
+    {
+        if ($this->keepProductsActiveUntil === null) {
+            return null;
+        }
+
+        if (! $this->cancelAt) {
+            return null;
+        }
+
+        $keepActiveUntil = null;
+
+        if (is_int($this->keepProductsActiveUntil)) {
+            $keepActiveUntil = $this->cancelAt->addDays($this->keepProductsActiveUntil);            
+        }else{
+
+            if ($this->keepProductsActiveUntil->gt($this->cancelAt)) {
+                return $this->keepProductsActiveUntil;
+            }
+
+            $keepActiveUntil = $this->cancelAt;
+        }
+
+        return $keepActiveUntil;
+    }
+
+    /**
+     * Get the subscription interval, defined by the user or the first item
+     *
+     * @return string
+     * 
+     * @throws \Exception
+     */
+    protected function getIntervalForPayload()
+    {
+        if (in_array($this->recurringInterval, ['day','week','month','year'])) {
+            return $this->recurringInterval;
+        }
+
+        $recurringInterval = null;
+
+        if (! $this->recurringInterval) {
+            $recurringInterval = $this->items->first()->subscription_settings['interval'];
+        }
+
+        if ($recurringInterval == null) {
+            throw new Exception("Unknow interval, \$firstItem->subscription_settings['interval'] property not found, choose one of [day,week,month or year]", 1);            
+        }
+
+        return $this->recurringInterval = $recurringInterval;
+    }
+
+    /**
+     * Get the billing cycle anchor
+     *
+     * @return DateTimeInterface
+     */
+    protected function getBillingCycleAnchorForPayload()
+    {
+        return $this->billingCycleAnchor ?? now();
+    }
+
+    /**
+     * Resolve the first current period ends at
+     *
+     * @return DateTimeInterface
+     * 
+     * @throws \Exception
+     */
+    protected function getCurrentPeriodEndsAtForPayload()
+    {
+        $recurringInterval = $this->getIntervalForPayload();
+        $carbonFunction    = 'add'.(ucfirst($recurringInterval)).'s';
+
+        // Calculating the renew date
+        return $this->getBillingCycleAnchorForPayload()->{$carbonFunction}($this->recurringIntervalCount);
+    }
+
+    /**
+     * Get the cancel date 
+     * 
+     * calculates from the expected invoices or get defined by customer
+     *
+     * @return null|\DateTimeInterface
+     */
+    protected function getCancelAtForPayload()
+    {
+        if (! $this->expectedInvoices) {
+            return $this->cancelAt;
+        }
+
+        if (! $this->cancelAt) {
+            return null;
+        }
+
+        return SubscriptionUtils::calculateCancelAtFromExpectedInvoices(
+            $this->getIntervalForPayload(),
+            $this->intervalCount,
+            $this->expectedInvoices,
+            $this->getBillingCycleAnchorForPayload()
+        );
+    }
 }

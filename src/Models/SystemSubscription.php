@@ -60,6 +60,8 @@ class SystemSubscription extends Model
     public const SYSTEM_CHARGES_SERVICE_NAME = 'System_Charges';
 
 
+    public const STATUS_ACTIVE             = 'active';
+    //public const STATUS_TRIALING          = 'trialing';
     public const STATUS_INCOMPLETE         = 'incomplete';
     public const STATUS_INCOMPLETE_EXPIRED = 'incomplete_expired';
     public const STATUS_PAST_DUE           = 'past_due';
@@ -240,7 +242,7 @@ class SystemSubscription extends Model
     {
         return $this->morphTo('owner');   
     }
-
+    
     /**
      * Get the owner of this subscription
      * 
@@ -261,8 +263,24 @@ class SystemSubscription extends Model
         return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription_item', SystemSubscriptionItem::class), 'system_subscription_id');
     }
 
+    /**
+     * Get the service_integration that owns the SystemSubscription
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function service_integration()
     {
         return $this->belongsTo(ServiceIntegrationsContainerProvider::getFromConfig('model', ServiceIntegration::class), 'service_integration_id');
+    }
+
+    /**
+     * Scope by service_integration
+     * 
+     * @param \Illuminate\Database\Query\Builder
+     * @param int $serviceIntegrationId
+     */
+    public function scopeServiceIntegration($query, $serviceIntegrationId)
+    {
+        return $query->where('service_integration_id', $serviceIntegrationId);
     }
 }

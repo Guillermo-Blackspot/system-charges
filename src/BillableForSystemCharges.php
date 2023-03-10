@@ -6,7 +6,6 @@ use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
 use BlackSpot\SystemCharges\Concerns\ManagesSubscriptions;
 use BlackSpot\SystemCharges\Concerns\PerformsCharges;
 use BlackSpot\SystemCharges\Relationships\HasSystemPaymentIntents;
-use BlackSpot\SystemCharges\Relationships\HasSystemSubscriptions;
 use Exception;
 
 trait BillableForSystemCharges
@@ -15,5 +14,4 @@ trait BillableForSystemCharges
     use HasSystemPaymentIntents;
     use PerformsCharges;
     use ManagesSubscriptions;
-    use HasSystemSubscriptions;
 }
