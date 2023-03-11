@@ -67,6 +67,7 @@ class SystemSubscription extends Model
     public const STATUS_PAST_DUE           = 'past_due';
     public const STATUS_UNPAID             = 'unpaid';
     public const STATUS_CANCELED           = 'canceled';    
+    public const STATUS_PAUSED             = 'paused';
 
     /**
      * Overwrite cast json method
@@ -231,6 +232,50 @@ class SystemSubscription extends Model
     public function onGracePeriod()
     {
         return $this->current_period_ends_at && $this->current_period_ends_at->isFuture();
+    }
+
+
+    /**
+     * Set owner as null
+     * 
+     * Use this function if you need delete a subscription 
+     * but preserving itself on the record with payment_intents
+     * 
+     * subscription status will be "canceled"
+     *
+     * @return void
+     */
+    public function unlinkOwner()
+    {
+        $this->update([
+            'owner_id'   => null,
+            'owner_type' => null,
+            'status'     => self::STATUS_CANCELED,
+        ]);
+    }
+
+    /**
+     * Set the subscription status on "canceled"
+     *
+     * @return void
+     */
+    public function cancelNow()
+    {
+        $this->update([
+            'status' => self::STATUS_CANCELED
+        ]);
+    }
+
+    /**
+     * Pause subscription
+     * 
+     * @return void
+     */
+    public function pauseNow()
+    {
+        $this->update([
+            'status' => self::STATUS_PAUSED
+        ]);
     }
 
     /**
