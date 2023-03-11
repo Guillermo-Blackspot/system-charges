@@ -48,9 +48,9 @@ trait PerformsCharges
             throw new Exception("You must define a payment method", 1);
         }
 
-        $sytemChargesServiceIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
+        $serviceIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
 
-        if (is_null($sytemChargesServiceIntegration)) {
+        if (is_null($serviceIntegration)) {
             return ;
         }
 
@@ -61,7 +61,7 @@ trait PerformsCharges
             'owner_name'             => $this->full_name ?? $this->name,
             'owner_email'            => $this->email,
             'due_date'               => now()->addDays(3),
-            'service_integration_id' => $sytemChargesServiceIntegration->id,
+            'service_integration_id' => $serviceIntegration->id,
         ], $options);
 
         return $this->system_payment_intents()->create($data);

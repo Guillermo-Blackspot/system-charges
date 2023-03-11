@@ -3,6 +3,7 @@
 namespace BlackSpot\SystemCharges\Concerns;
 
 use BlackSpot\SystemCharges\SubscriptionBuilder;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use Exception;
 
 trait ManagesSubscriptions

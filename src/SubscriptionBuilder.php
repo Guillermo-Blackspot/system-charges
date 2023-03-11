@@ -344,6 +344,12 @@ class SubscriptionBuilder
      */
     public function keepProductsActiveUntil($daysOrDate)
     {
+        if (is_numeric($daysOrDate)) {
+            $daysOrDate = (int) $daysOrDate;
+        }else if ($daysOrDate !== null) {
+            $daysOrDate = Carbon::parse($daysOrDate);
+        }
+
         $this->keepProductsActiveUntil = $daysOrDate;
 
         return $this;
@@ -466,7 +472,7 @@ class SubscriptionBuilder
             'service_integration_id'     => $this->serviceIntegrationId
         ]);
         
-        $this->createSubscriptionItems($subscription);
+        $this->createSubscriptionItems($subscription, $paymentMethod);
         
         return $subscription;
     }
@@ -477,7 +483,7 @@ class SubscriptionBuilder
      * @param \BlackSpot\SystemCharges\SystemSubscription  $subscription
      * @return void
      */
-    protected function createSubscriptionItems($subscription)
+    protected function createSubscriptionItems($subscription, $paymentMethod)
     {
         $agreggatedItems = [];
 
@@ -488,26 +494,26 @@ class SubscriptionBuilder
                             [ 'model_id' => $item->id, 'model_type' => $modelClass],
                             [ 
                                 'quantity'    => 1,         
-                                'price  '     => $item->price,
+                                'price'       => $item->price,
                                 'model_name'  => $item->name,
                                 'model_class' => $modelClass,
 
                             ]
                         );
 
-            $agreggatedItems[] = ['id' => $subItem->id];
+            $aggregatedItems[] = ['id' => $subItem->id];
         }
 
         $this->owner->createSystemPaymentIntentWith($this->serviceIntegrationId, $paymentMethod, $this->items->sum('price'), [
             'system_subscription_id'  => $subscription->id,
             'subscription_identifier' => $subscription->identified_by,
             'subscription_name'       => $subscription->name,
-            'owner_name'              => $this->owner->full_name ? $this->owner->name,
-            'owner_emai'              => $this->owner->email,
+            'owner_name'              => $this->owner->full_name ?? $this->owner->name,
+            'owner_email'             => $this->owner->email,
             'metadata' => [
                 'uses_type'                 => 'for_system_subscriptions',
                 'system_subscription_id'    => $subscription->id,
-                'system_subscription_items' => $agreggatedItems,
+                'system_subscription_items' => $aggregatedItems,
             ]
         ]);
 
@@ -584,7 +590,7 @@ class SubscriptionBuilder
                 return $this->keepProductsActiveUntil;
             }
 
-            $keepActiveUntil = $this->cancelAt;
+            $keepActiveUntil = $this->cancelAt; // At the same time that is canceled
         }
 
         return $keepActiveUntil;
@@ -661,7 +667,7 @@ class SubscriptionBuilder
 
         return SubscriptionUtils::calculateCancelAtFromExpectedInvoices(
             $this->getIntervalForPayload(),
-            $this->intervalCount,
+            $this->recurringIntervalCount,
             $this->expectedInvoices,
             $this->getBillingCycleAnchorForPayload()
         );
