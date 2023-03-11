@@ -635,11 +635,8 @@ class SubscriptionBuilder
      */
     protected function getCurrentPeriodEndsAtForPayload()
     {
-        return SubscriptionUtils::calculateCancelAtFromExpectedInvoices(
-            $this->getIntervalForPayload(),
-            $this->recurringIntervalCount,
-            1,
-            $this->billingCycleAnchor
+        return SubscriptionUtils::calculateNextInvoice(
+            $this->getIntervalForPayload(), $this->recurringIntervalCount, $this->billingCycleAnchor
         );
     }
 

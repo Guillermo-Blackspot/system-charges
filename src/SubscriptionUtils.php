@@ -117,5 +117,22 @@ class SubscriptionUtils
         return $cancelAt;
     }
 
+    /**
+     * Calculate the next invoice date
+     * 
+     * @param string  $interval
+     * @param int  $intervalCount  - default 1
+     * @param string|null|DateTimeInterface  $billingCycleAnchor  -- null is now
+     * 
+     * @return \DateTimeInterface
+     */
+    public function calculateNextInvoice($interval, $intervalCount, $billingCycleAnchor)
+    {
+        $billingCycleAnchor = static::resolveBillingCycleAnchor($billingCycleAnchor);
+        $carbonFunction     = 'add'.(ucfirst($interval)).'s';  // addDays, addWeeks, addMonths, addYears
+
+        return $billingCycleAnchor->{$carbonFunction}($intervalCount ?? 1);
+    }
+
 
 }
