@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Date;
 
 class SubscriptionBuilder
 {
@@ -164,6 +165,7 @@ class SubscriptionBuilder
         $this->name                   = $name;
         $this->items                  = $items instanceof EloquentModel ? Collection::make([$items]) : $items;
         $this->serviceIntegrationId   = optional($this->owner->getSystemChargesServiceIntegration($serviceIntegrationId))->id;
+        $this->billingCycleAnchor     = now();
 
         if ($this->serviceIntegrationId === null){
             return ; // unknow subsidiary
@@ -233,11 +235,15 @@ class SubscriptionBuilder
      */
     public function anchorBillingCycleOn($date)
     {
-        if ($date != null && ! ($date instanceof DateTimeInterface)) {
-            $date = Carbon::parse($date);
+        if (! $date) {
+            $date = now();
         }
 
-        if ($date instanceof DateTimeInterface && ($date->isPast() && !$date->isToday())) {
+        if (! ($date instanceof DateTimeInterface)) {
+            $date = Date::parse($date);
+        }
+
+        if ($date->isPast() && !$date->isToday()) {
             throw new Exception("Can not create subscriptions with a past date", 1);
         }
     
@@ -295,7 +301,7 @@ class SubscriptionBuilder
     public function cancelAt($date)
     {       
         if ($date != null && ! ($date instanceof \DateTimeInterface)) {
-            $date = Carbon::parse($date);
+            $date = Date::parse($date);
         }
 
         $this->cancelAt = $date;
@@ -325,7 +331,7 @@ class SubscriptionBuilder
     public function trialUntil($trialUntil)
     {
         if ($trialUntil != null && ! ($trialUntil instanceof \DateTimeInterface)) {
-            $trialUntil = Carbon::parse($trialUntil);
+            $trialUntil = Date::parse($trialUntil);
         }
 
         $this->trialExpires = $trialUntil;
@@ -347,7 +353,7 @@ class SubscriptionBuilder
         if (is_numeric($daysOrDate)) {
             $daysOrDate = (int) $daysOrDate;
         }else if ($daysOrDate !== null) {
-            $daysOrDate = Carbon::parse($daysOrDate);
+            $daysOrDate = Date::parse($daysOrDate);
         }
 
         $this->keepProductsActiveUntil = $daysOrDate;
@@ -457,10 +463,10 @@ class SubscriptionBuilder
             'name'                       => $this->name,
             'description'                => $this->description,
             'status'                     => SystemSubscription::STATUS_INCOMPLETE,
-            'billing_cycle_anchor'       => $this->getBillingCycleAnchorForPayload(),
-            'current_period_start'       => $this->getBillingCycleAnchorForPayload(),
+            'billing_cycle_anchor'       => $this->billingCycleAnchor,
+            'current_period_start'       => $this->billingCycleAnchor,
             'current_period_ends_at'     => $this->getCurrentPeriodEndsAtForPayload(),
-            'trial_ends_at'              => $this->getTrialEndForPayload(),
+            'trial_ends_at'              => $this->getTrialEndsAtForPayload(),
             'cancel_at'                  => $this->getCancelAtForPayload(),
             'keep_products_active_until' => $this->getKeepProductsActiveUntilForPayload(),            
             'recurring_interval'         => $this->getIntervalForPayload(),
@@ -546,23 +552,25 @@ class SubscriptionBuilder
      *
      * @return int|string|null
      */
-    protected function getTrialEndForPayload()
+    protected function getTrialEndsAtForPayload()
     {
         if ($this->skipTrial) {
             return null; // has not trial days
         }
 
-        $trialExpires = null;  // By default subscriptions not has trial days
-
         if (is_int($this->trialExpires)) {
-            $trialExpires = $this->getBillingCycleAnchorForPayload()->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
+            
+            return $this->billingCycleAnchor->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
+
         }else if ($this->trialExpires instanceof DateTimeInterface) {           
-            if ($this->trialExpires->gt($this->getBillingCycleAnchorForPayload())){    
-                $trialExpires = $this->trialExpires;
+            
+            if ($this->trialExpires->gt($this->billingCycleAnchor)){    
+                return $this->trialExpires;
             }
         }
 
-        return $trialExpires;
+
+        return null;
     }    
 
     /**
@@ -580,20 +588,16 @@ class SubscriptionBuilder
             return null;
         }
 
-        $keepActiveUntil = null;
 
         if (is_int($this->keepProductsActiveUntil)) {
-            $keepActiveUntil = $this->cancelAt->addDays($this->keepProductsActiveUntil);            
-        }else{
-
-            if ($this->keepProductsActiveUntil->gt($this->cancelAt)) {
-                return $this->keepProductsActiveUntil;
-            }
-
-            $keepActiveUntil = $this->cancelAt; // At the same time that is canceled
+            return $this->cancelAt->addDays($this->keepProductsActiveUntil);            
+        }
+            
+        if ($this->keepProductsActiveUntil->gt($this->cancelAt)) {
+            return $this->keepProductsActiveUntil;
         }
 
-        return $keepActiveUntil;
+        return $this->cancelAt; // At the same time that is canceled
     }
 
     /**
@@ -623,16 +627,6 @@ class SubscriptionBuilder
     }
 
     /**
-     * Get the billing cycle anchor
-     *
-     * @return DateTimeInterface
-     */
-    protected function getBillingCycleAnchorForPayload()
-    {
-        return $this->billingCycleAnchor ?? now();
-    }
-
-    /**
      * Resolve the first current period ends at
      *
      * @return DateTimeInterface
@@ -641,11 +635,12 @@ class SubscriptionBuilder
      */
     protected function getCurrentPeriodEndsAtForPayload()
     {
-        $recurringInterval = $this->getIntervalForPayload();
-        $carbonFunction    = 'add'.(ucfirst($recurringInterval)).'s';
-
-        // Calculating the renew date
-        return $this->getBillingCycleAnchorForPayload()->{$carbonFunction}($this->recurringIntervalCount);
+        return SubscriptionUtils::calculateCancelAtFromExpectedInvoices(
+            $this->getIntervalForPayload(),
+            $this->recurringIntervalCount,
+            1,
+            $this->billingCycleAnchor
+        );
     }
 
     /**
@@ -669,7 +664,7 @@ class SubscriptionBuilder
             $this->getIntervalForPayload(),
             $this->recurringIntervalCount,
             $this->expectedInvoices,
-            $this->getBillingCycleAnchorForPayload()
+            $this->billingCycleAnchor
         );
     }
 }

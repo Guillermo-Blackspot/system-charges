@@ -4,7 +4,7 @@ namespace BlackSpot\SystemCharges;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class SubscriptionUtils
 {
@@ -19,13 +19,13 @@ class SubscriptionUtils
     public static function resolveBillingCycleAnchor($billingCycleAnchor = null)
     {
         if (is_null($billingCycleAnchor)) {
-            return Carbon::now();
+            return Date::now();
         }
 
-        $billingCycleAnchor = Carbon::parse($billingCycleAnchor);
+        $billingCycleAnchor = Date::parse($billingCycleAnchor);
 
         if ($billingCycleAnchor->isPast() && ! $billingCycleAnchor->isToday()) {            
-            $billingCycleAnchor = Carbon::now();
+            $billingCycleAnchor = Date::now();
         }
 
         return $billingCycleAnchor;
@@ -75,12 +75,12 @@ class SubscriptionUtils
         }
 
         $firstItem          = $items->first();
-        $billingCycleAnchor = Carbon::now();
+        $billingCycleAnchor = Date::now();
     
         if (isset($firstItem->subscription_settings['billing_cycle_anchor'])) {
-            $billingCycleAnchor = Carbon::parse($firstItem->subscription_settings['billing_cycle_anchor'])->isPast() 
-                                    ? Carbon::now() 
-                                    : Carbon::parse($firstItem->subscription_settings['billing_cycle_anchor']);
+            $billingCycleAnchor = Date::parse($firstItem->subscription_settings['billing_cycle_anchor'])->isPast() 
+                                    ? Date::now() 
+                                    : Date::parse($firstItem->subscription_settings['billing_cycle_anchor']);
         }
         
         return $billingCycleAnchor;
