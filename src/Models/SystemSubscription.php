@@ -8,6 +8,7 @@ use BlackSpot\SystemCharges\Concerns\ManagesCredentials;
 use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
 use BlackSpot\SystemCharges\Models\SystemSubscriptionItem;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class SystemSubscription extends Model
 {
@@ -58,16 +59,14 @@ class SystemSubscription extends Model
     
 
     public const SYSTEM_CHARGES_SERVICE_NAME = 'System_Charges';
-
-
-    public const STATUS_ACTIVE             = 'active';
-    //public const STATUS_TRIALING          = 'trialing';
-    public const STATUS_INCOMPLETE         = 'incomplete';
-    public const STATUS_INCOMPLETE_EXPIRED = 'incomplete_expired';
-    public const STATUS_PAST_DUE           = 'past_due';
-    public const STATUS_UNPAID             = 'unpaid';
-    public const STATUS_CANCELED           = 'canceled';    
-    public const STATUS_PAUSED             = 'paused';
+    public const STATUS_ACTIVE               = 'active';
+    public const STATUS_INCOMPLETE           = 'incomplete';
+    public const STATUS_INCOMPLETE_EXPIRED   = 'incomplete_expired';
+    public const STATUS_PAST_DUE             = 'past_due';
+    public const STATUS_UNPAID               = 'unpaid';
+    public const STATUS_CANCELED             = 'canceled';    
+    public const STATUS_PAUSED               = 'paused';
+    public const STATUS_UNLINKED             = 'unlinked';
 
     /**
      * Overwrite cast json method
@@ -83,14 +82,15 @@ class SystemSubscription extends Model
     public static function resolveStatusDescription($status)
     {
         switch ($status) {
-            case 'incomplete':         return 'Primer cobro falló';                           break;
-            case 'incomplete_expired': return 'Primer cobro falló y ya no puede reactivarse'; break;
-            case 'trialing':           return 'En periodo de prueba';                         break;
-            case 'active':             return 'Activo';                                       break;
-            case 'past_due':           return 'La renovación falló';                          break;
-            case 'canceled':           return 'Cancelado'; break;
-            case 'unpaid':             return 'No pagado, acumulando facturas';               break;
-            default:                   return 'Desconocido';                                  break;
+            case self::STATUS_INCOMPLETE : return 'Primer cobro falló';                           break;
+            case self::STATUS_INCOMPLETE : return 'Primer cobro falló y ya no puede reactivarse'; break;
+            case self::STATUS_ACTIVE     : return 'Activo';                                       break;
+            case self::STATUS_PAST_DUE   : return 'La renovación falló';                          break;
+            case self::STATUS_CANCELED   : return 'Cancelado';                                    break;
+            case self::STATUS_UNPAID     : return 'No pagado, acumulando facturas';               break;
+            case self::STATUS_PAUSED     : return 'Pausado';                                      break;
+            case self::STATUS_UNLINKED   : return 'Desvinculado';                                 break;
+            default                      : return 'Desconocido';                                  break;
         }
     }
     /**
@@ -186,6 +186,7 @@ class SystemSubscription extends Model
     public function active()
     {
         return !$this->ended() &&
+            $this->status !== self::STATUS_UNLINKED &&
             $this->status !== self::STATUS_INCOMPLETE &&
             $this->status !== self::STATUS_INCOMPLETE_EXPIRED &&
             $this->status !== self::STATUS_PAST_DUE &&
@@ -200,6 +201,16 @@ class SystemSubscription extends Model
     public function ended()
     {
         return $this->canceled() && !$this->onGracePeriod();
+    }
+
+    public function paused()
+    {
+        return $this->status == self::STATUS_PAUSED;
+    }
+
+    public function unlinked()
+    {
+        return ! isset($this->owner) || ! isset($this->owner_id) || $this->status == self::STATUS_UNLINKED;
     }
 
     /**
@@ -245,13 +256,21 @@ class SystemSubscription extends Model
      *
      * @return void
      */
-    public function unlinkOwner()
+    public function unlinkNow()
     {
         $this->update([
             'owner_id'   => null,
             'owner_type' => null,
-            'status'     => self::STATUS_CANCELED,
+            'status'     => self::STATUS_UNLINKED,
         ]);
+
+
+        DB::table(SystemPaymentIntent::TABLE_NAME)
+            ->where('system_subscription_id', $this->id)
+            ->update([
+                'owner_id'   => null,
+                'owner_type' => null,
+            ]);
     }
 
     /**
