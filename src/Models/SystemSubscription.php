@@ -264,7 +264,6 @@ class SystemSubscription extends Model
             'status'     => self::STATUS_UNLINKED,
         ]);
 
-
         DB::table(SystemPaymentIntent::TABLE_NAME)
             ->where('system_subscription_id', $this->id)
             ->update([
