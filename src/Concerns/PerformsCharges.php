@@ -54,6 +54,18 @@ trait PerformsCharges
             return ;
         }
 
+        $metadata = [
+            'owner_id'   => $this->id,
+            'owner_type' => get_class($this),
+        ];
+
+        if (isset($options['metadata'])) {
+            $metadata = array_merge($metadata, $options['metadata']);
+
+        }
+        
+        unset($options['metadata']);
+        
         $data = array_merge([
             'amount'                 => $amount,
             'paid'                   => false,
@@ -62,6 +74,7 @@ trait PerformsCharges
             'owner_email'            => $this->email,
             'due_date'               => now()->addDays(3),
             'service_integration_id' => $serviceIntegration->id,
+            'metadata'               => $metadata
         ], $options);
 
         return $this->system_payment_intents()->create($data);

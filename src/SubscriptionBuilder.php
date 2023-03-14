@@ -472,7 +472,7 @@ class SubscriptionBuilder
             'recurring_interval'         => $this->getIntervalForPayload(),
             'recurring_interval_count'   => $this->recurringIntervalCount,
             'expected_invoices'          => $this->expectedInvoices,
-            'metadata'                   => $this->metadata,
+            'metadata'                   => $this->getMetadataForPayload(),
             'owner_name'                 => $this->owner->full_name ?? $this->owner->name,
             'owner_email'                => $this->owner->email,
             'service_integration_id'     => $this->serviceIntegrationId
@@ -520,6 +520,7 @@ class SubscriptionBuilder
                 'uses_type'                 => 'for_system_subscriptions',
                 'system_subscription_id'    => $subscription->id,
                 'system_subscription_items' => $aggregatedItems,
+                'invoice_number'            => 1,
             ]
         ]);
 
@@ -547,6 +548,14 @@ class SubscriptionBuilder
     //     return $items->values()->all();
     // }
 
+    protected function getMetadataForPayload()
+    {
+        return array_merge([
+            'owner_id'   => $this->owner->id,
+            'owner_type' => get_class($this->owner),
+        ]);
+    }
+    
     /**
      * Get the trial ending date for the Stripe payload.
      *
