@@ -72,7 +72,7 @@ trait PerformsCharges
             'status'                 => 'pen',
             'owner_name'             => $this->full_name ?? $this->name,
             'owner_email'            => $this->email,
-            'due_date'               => now()->addDays(3),
+            'due_date'               => isset($options['created_at']) ? Date::parse($options['created_at'])->addDays(3) : now()->addDays(3),
             'service_integration_id' => $serviceIntegration->id,
             'metadata'               => $metadata
         ], $options);

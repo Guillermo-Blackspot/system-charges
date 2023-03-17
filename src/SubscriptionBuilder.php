@@ -516,6 +516,7 @@ class SubscriptionBuilder
             'subscription_name'       => $subscription->name,
             'owner_name'              => $this->owner->full_name ?? $this->owner->name,
             'owner_email'             => $this->owner->email,
+            'created_at'              => $subscription->current_period_start,
             'metadata' => [
                 'uses_type'                 => 'for_system_subscriptions',
                 'system_subscription_id'    => $subscription->id,

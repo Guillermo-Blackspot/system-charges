@@ -129,10 +129,27 @@ class SubscriptionUtils
     public function calculateNextInvoice($interval, $intervalCount, $billingCycleAnchor)
     {
         $billingCycleAnchor = static::resolveBillingCycleAnchor($billingCycleAnchor);
-        $carbonFunction     = 'add'.(ucfirst($interval)).'s';  // addDays, addWeeks, addMonths, addYears
 
-        return $billingCycleAnchor->{$carbonFunction}($intervalCount ?? 1);
+        return static::calculateNextEndPeriod($interval, $intervalCount, $billingCycleAnchor);
     }
 
+    /**
+     * Calculate the next period from the given date
+     * 
+     * @param string  $interval
+     * @param int  $intervalCount  - default 1
+     * @param string|null|DateTimeInterface  $renewDate  -- null is now
+     *
+     * @return \DateTimeInterface
+     */
+    public function calculateNextEndPeriod($interval, $intervalCount, $renewDate = null)
+    {
+        $nextPeriod     = $renewDate ?? Date::now();
+        $carbonFunction = 'add'.(ucfirst($interval)).'s';  // addDays, addWeeks, addMonths, addYears
 
+        // Automatically add one day taking as reference the last day of the current period
+        //$nextPeriod = $nextPeriod->addDay(1);
+
+        return $nextPeriod->{$carbonFunction}($intervalCount ?? 1);        
+    }
 }
