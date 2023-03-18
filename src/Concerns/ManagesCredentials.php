@@ -19,8 +19,6 @@ trait ManagesCredentials
 {
     use ServiceIntegrationFinder;
 
-    protected $systemChargesServiceIntegrationRecentlyFetched = null;
-
     /**
      * Get the system charges service integration query
      * 
@@ -30,7 +28,7 @@ trait ManagesCredentials
      */
     protected function getSystemChargesServiceIntegrationQuery($serviceIntegrationId = null)
     {
-        return $this->getServiceIntegrationQueryFinder($serviceIntegrationId, ['getSystemChargesServiceIntegrationOwnerId', 'getSystemChargesServiceIntegrationOwnerType'])
+        return $this->getServiceIntegrationQueryFinder($serviceIntegrationId, 'system_charges')
                     ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
                     ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
     }
@@ -41,35 +39,33 @@ trait ManagesCredentials
      * @param int|null $serviceIntegrationId
      * 
      * @return object|null
+     * 
+     * @throws \LogicException
      */
     public function getSystemChargesServiceIntegration($serviceIntegrationId = null)
     {
-        if ($this->systemChargesServiceIntegrationRecentlyFetched !== null) {
-            return $this->systemChargesServiceIntegrationRecentlyFetched;
+        if ($this->serviceIntegrationWasLoaded($serviceIntegrationId)) {
+            return $this->getServiceIntegrationLoaded($serviceIntegrationId);
         }
-                
-        // ServiceIntegration.php (Model)
-        if (isset($this->id) && self::class == ServiceIntegrationsContainerProvider::getFromConfig('model')) {
-            $service = (object) $this->toArray();
-        }else{
-            $query = $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId);
 
-            if (is_null($query)) return ;
-            
-            $service = $query->first();
+        $systemChargesIntegration = $this->resolveServiceIntegrationFromInstance($this, $serviceIntegrationId);
+
+        // Try to resolve
+        if (is_null($systemChargesIntegration)){
+            $systemChargesIntegration = $this->getStripeServiceIntegrationQuery($serviceIntegrationId)->first();
         }
-        
-        if (is_null($service)) {
+
+        if (is_null($systemChargesIntegration)) {
             return ;
         }
 
         $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_colum','payload');
 
-        if (isset($service->{$payloadColumn})) {
-            $service->{$payloadColumn.'_decoded'} = json_decode($service->{$payloadColumn}, true);
+        if (isset($systemChargesIntegration->{$payloadColumn})) {
+            $systemChargesIntegration->{$payloadColumn.'_decoded'} = json_decode($systemChargesIntegration->{$payloadColumn}, true);
         }
 
-        return $this->systemChargesServiceIntegrationRecentlyFetched = $service;
+        return $this->putServiceIntegrationFound($systemChargesIntegration);
     }
 
     /**

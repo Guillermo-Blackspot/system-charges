@@ -7,7 +7,7 @@ use BlackSpot\SystemCharges\Models\SystemSubscriptionItem;
 return  [
 
     /**
-     * Paste this in the service-integrations-container.php config
+     * Copy this in the service-integrations-container.php config
      */
     
     'system_charges_models' => [
