@@ -5,6 +5,7 @@ namespace BlackSpot\SystemCharges\Concerns;
 use BlackSpot\ServiceIntegrationsContainer\Concerns\ServiceIntegrationFinder;
 use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Exceptions\InvalidSystemChargesServiceIntegration;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -56,37 +57,47 @@ trait ManagesCredentials
         }
 
         if (is_null($systemChargesIntegration)) {
-            return ;
+            throw InvalidSystemChargesServiceIntegration::notYetCreated($this);
         }
 
         $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_colum','payload');
 
-        if (isset($systemChargesIntegration->{$payloadColumn})) {
-            $systemChargesIntegration->{$payloadColumn.'_decoded'} = json_decode($systemChargesIntegration->{$payloadColumn}, true);
+        if (! isset($systemChargesIntegration->{$payloadColumn})) {
+            throw InvalidSystemChargesServiceIntegration::payloadColumnNotFound($this, $payloadColumn);
         }
+
+        $payloadValue = $systemChargesIntegration->{$payloadColumn};
+
+        $systemChargesIntegration->{$payloadColumn.'_decoded'} = is_array($payloadValue) ? $payloadValue : json_decode($payloadValue, true);
 
         return $this->putServiceIntegrationFound($systemChargesIntegration);
     }
 
     /**
-     * Determine if the customer has a Stripe customer ID and throw an exception if not.
+     * Determine if the customer has a SystemCharges service and throw an exception if not.
      *
      * @return void
      *
-     * @throws \Exception
+     * @throws InvalidSystemChargesServiceIntegration
      */
     public function assertSystemChargesServiceIntegrationExists($serviceIntegrationId = null)
     {
-        $query = $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId);
+        $this->getSystemChargesServiceIntegration($serviceIntegrationId);
+    }
 
-        if (is_null($query)) {
-            throw new \Exception("System Charges Service Integration Not Created Yet", 1);
-        }
+    /**
+     * Determine if the customer has a SystemCharges service and throw an exception if not.
+     *
+     * @return void
+     *
+     * @throws InvalidSystemChargesServiceIntegration
+     */
+    public function assertActiveSystemChargesServiceIntegrationExists($serviceIntegrationId = null)
+    {
+        $isActive = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->active;
 
-        $service = $query->first();
-        
-        if (is_null($service)) {
-            throw new \Exception("System Charges Service Integration Not Created Yet", 1);
+        if (! $isActive) {
+            InvalidSystemChargesServiceIntegration::isDisabled($this);
         }
     }
 
@@ -95,20 +106,18 @@ trait ManagesCredentials
      * 
      * @param int|null 
      * @return string|null
+     * 
+     * @throws InvalidSystemChargesServiceIntegration
      */
     public function getRelatedSystemChargesPayloadServiceIntegration($serviceIntegrationId = null)
     {
-        $payloadColumn     = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
         $stripeIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
+        $payloadColumn     = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
-        if (is_null($stripeIntegration)) {
-            return ;
+        if (! isset($stripeIntegration->{$payloadColumn})) {
+            throw InvalidSystemChargesServiceIntegration::payloadColumnNotFound($this, $payloadColumn);
         }
 
-        if (!isset($stripeIntegration->{$payloadColumn})) {
-            return ;
-        }
-
-        return json_decode($stripeIntegration->{$payloadColumn}, true);
+        return $stripeIntegration->{$payloadColumn.'_decoded'};
     }
 }

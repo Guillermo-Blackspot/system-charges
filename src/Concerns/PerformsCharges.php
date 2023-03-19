@@ -2,6 +2,9 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Exceptions\InvalidSystemPaymentMethod;
+use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
 use Exception;
 
 trait PerformsCharges
@@ -34,25 +37,21 @@ trait PerformsCharges
      * @param int|null $serviceIntegrationId
      * @param string|int $amount
      * @param array $options
-     * @throws \Exception
-     * 
      * @return \App\Models\Charges\SystemPaymentIntent 
+     * 
+     * @throws InvalidSystemPaymentMethod|InvalidSystemChargesServiceIntegration
      */
     public function createSystemPaymentIntent($serviceIntegrationId = null, $amount, $options)
     {  
-        if (!in_array($options['payment_method'],['wire_t','in_sub','agree'])) {
-            throw new Exception("{$options['payment_method']} Not Exists", 1);
+        if (! isset($options['payment_method'])) {            
+            throw InvalidSystemPaymentMethod::isEmpty();
         }
 
-        if (!isset($options['payment_method'])) {            
-            throw new Exception("You must define a payment method", 1);
-        }
+        if (! in_array($options['payment_method'],['wire_t','in_sub','agree'])) {
+            throw InvalidSystemPaymentMethod::notSupported($this, $options['payment_method']);
+        }        
 
         $serviceIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
-
-        if (is_null($serviceIntegration)) {
-            return ;
-        }
 
         $metadata = [
             'owner_id'   => $this->id,
@@ -78,6 +77,17 @@ trait PerformsCharges
         ], $options);
 
         return $this->system_payment_intents()->create($data);
+    }
+
+
+    /**
+     * Get the system_payment_intents, eloquent relationship
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
+     */
+    public function system_payment_intents()
+    {
+        return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'owner');
     }
 }
 

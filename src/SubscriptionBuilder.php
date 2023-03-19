@@ -2,6 +2,7 @@
 
 namespace BlackSpot\SystemCharges;
 
+use BlackSpot\SystemCharges\Exceptions\InvalidSystemSubscription;
 use BlackSpot\SystemCharges\Models\SystemSubscription;
 use BlackSpot\SystemCharges\SubscriptionUtils;
 use Carbon\Carbon;
@@ -9,8 +10,8 @@ use DateTimeInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 
 class SubscriptionBuilder
 {
@@ -157,6 +158,9 @@ class SubscriptionBuilder
      * @param string $name
      * @param int|null $serviceIntegrationId
      * @param Model|Illuminate\Database\Eloquent\Collection
+     * @return $this
+     * 
+     * @throws InvalidSystemChargesServiceIntegration
      */
     public function __construct(EloquentModel $owner, $identifier, $name, $items, $serviceIntegrationId = null)
     {
@@ -164,12 +168,8 @@ class SubscriptionBuilder
         $this->subscriptionIdentifier = $identifier;
         $this->name                   = $name;
         $this->items                  = $items instanceof EloquentModel ? Collection::make([$items]) : $items;
-        $this->serviceIntegrationId   = optional($this->owner->getSystemChargesServiceIntegration($serviceIntegrationId))->id;
+        $this->serviceIntegrationId   = $this->owner->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
         $this->billingCycleAnchor     = now();
-
-        if ($this->serviceIntegrationId === null){
-            return ; // unknow subsidiary
-        }
 
         $existingRelatedSubscription = $this->owner->findSystemSubscriptionByIdentifier($this->serviceIntegrationId, $this->subscriptionIdentifier);
 
@@ -232,6 +232,8 @@ class SubscriptionBuilder
      *
      * @param  \DateTimeInterface|int  $date
      * @return $this
+     * 
+     * @throws InvalidSystemSubscription
      */
     public function anchorBillingCycleOn($date)
     {
@@ -244,7 +246,7 @@ class SubscriptionBuilder
         }
 
         if ($date->isPast() && !$date->isToday()) {
-            throw new Exception("Can not create subscriptions with a past date", 1);
+            throw InvalidSystemSubscription::pastDate($this, $date);
         }
     
         $this->billingCycleAnchor = $date;
@@ -367,12 +369,12 @@ class SubscriptionBuilder
      * @param int $interval
      * @return $this
      * 
-     * @throws \Exception
+     * @throws InvalidSystemSubscription
      */
     public function interval($interval)
     {
         if (!in_array($interval, ['day','week','month','year'])) {
-            throw new Exception("Unknow interval {$interval}, choose one of [day,week,month or year]", 1);
+            throw InvalidSystemSubscription::unknownInterval($interval);
         }
 
         $this->recurringInterval = $interval;
@@ -413,12 +415,12 @@ class SubscriptionBuilder
      * @param  string $paymentMethod  The payment method for create the invoices
      * @return \App\Models\Charges\SystemSubscription
      *
-     * @throws \Exception
+     * @throws InvalidSystemSubscription
      */
     public function create($paymentMethod)
     {
         if (empty($this->items)) {
-            throw new Exception('At least one price is required when starting subscriptions.');
+            throw InvalidSystemSubscription::emptyItems($this);
         }
 
         return $this->createSubscription($paymentMethod);
@@ -615,7 +617,7 @@ class SubscriptionBuilder
      *
      * @return string
      * 
-     * @throws \Exception
+     * @throws \InvalidSystemSubscription
      */
     protected function getIntervalForPayload()
     {
@@ -630,7 +632,7 @@ class SubscriptionBuilder
         }
 
         if ($recurringInterval == null) {
-            throw new Exception("Unknow interval, \$firstItem->subscription_settings['interval'] property not found, choose one of [day,week,month or year]", 1);            
+            throw InvalidSystemSubscription::unknownIntervalFromFirstItem($this);
         }
 
         return $this->recurringInterval = $recurringInterval;

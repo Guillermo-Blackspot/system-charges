@@ -18,16 +18,13 @@ trait ManagesSubscriptions
      *
      * @param int|null  $serviceIntegrationId
      * @param string  $subscriptionIdentifier
-     * 
      * @return bool
+     * 
+     * @throws InvalidSystemChargesServiceIntegration
      */
     public function isSubscribedWithSystemChargesTo($serviceIntegrationId = null, $subscriptionIdentifier)
     {
-        $serviceIntegrationId = optional($this->getSystemChargesServiceIntegration($serviceIntegrationId))->id;
-
-        if (is_null($serviceIntegrationId)) {
-            return false;
-        }
+        $serviceIntegrationId = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
 
         return $this->system_subscriptions()->serviceIntegration($serviceIntegrationId)->where('identified_by', $subscriptionIdentifier)->exists();
     }
@@ -39,16 +36,13 @@ trait ManagesSubscriptions
      * @param int|null  $serviceIntegrationId
      * @param string  $subscriptionIdentifier
      * @param array  $with  - eager loading relationships
-     * 
      * @return null\BlackSpot\StripeMultipleAccounts\Models\ServiceIntegrationSubscription
+     * 
+     * @throws InvalidSystemChargesServiceIntegration
      */
     public function findSystemSubscriptionByIdentifier($serviceIntegrationId = null, $subscriptionIdentifier, $with = [])
     {
-        $serviceIntegrationId = optional($this->getSystemChargesServiceIntegration($serviceIntegrationId))->id;
-
-        if (is_null($serviceIntegrationId)) {
-            return null;
-        }
+        $serviceIntegrationId = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
 
         return $this->system_subscriptions()->serviceIntegration($serviceIntegrationId)->with($with)->where('identified_by', $subscriptionIdentifier)->first();
     }

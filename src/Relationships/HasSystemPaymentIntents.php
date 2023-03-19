@@ -21,13 +21,13 @@ trait HasSystemPaymentIntents
   //   });
   // }
 
-  /**
-  * Get the system_payment_intents
-  *
-  * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
-  */
-  public function system_payment_intents()
-  {
-    return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'owner');
-  }
+  // /**
+  // * Get the system_payment_intents
+  // *
+  // * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
+  // */
+  // public function system_payment_intents()
+  // {
+  //   return $this->morphMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'owner');
+  // }
 }
