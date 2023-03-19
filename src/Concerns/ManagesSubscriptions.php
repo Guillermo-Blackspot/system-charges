@@ -2,8 +2,9 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
-use BlackSpot\SystemCharges\SubscriptionBuilder;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Exceptions\InvalidSystemChargesServiceIntegration;
+use BlackSpot\SystemCharges\SubscriptionBuilder;
 use Exception;
 
 trait ManagesSubscriptions
@@ -19,12 +20,14 @@ trait ManagesSubscriptions
      * @param int|null  $serviceIntegrationId
      * @param string  $subscriptionIdentifier
      * @return bool
-     * 
-     * @throws InvalidSystemChargesServiceIntegration
      */
     public function isSubscribedWithSystemChargesTo($serviceIntegrationId = null, $subscriptionIdentifier)
     {
-        $serviceIntegrationId = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
+        try {
+            $serviceIntegrationId = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
+        } catch (InvalidSystemChargesServiceIntegration $err) {
+            return false;
+        }
 
         return $this->system_subscriptions()->serviceIntegration($serviceIntegrationId)->where('identified_by', $subscriptionIdentifier)->exists();
     }
