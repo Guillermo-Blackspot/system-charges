@@ -53,7 +53,7 @@ trait HasSystemChargesIntegrations
    * 
    * @return boolean
    */
-  public function hasSystemChargesServiceIntegrationActive()
+  public function hasActiveSystemChargesServiceIntegration()
   {  
     return $this->findSystemChargesServiceIntegration(true)->isNotEmpty();
   }
@@ -84,7 +84,7 @@ trait HasSystemChargesIntegrations
     return $this->findSystemChargesServiceIntegration(false)->first();
   }
 
-  public function scopeIfHasSystemChargesServiceIntegration($query)
+  public function scopeWhereHasSystemChargesServiceIntegration($query)
   {
     return $query->whereHas('service_integrations', function($query){
       $query
@@ -93,7 +93,7 @@ trait HasSystemChargesIntegrations
     });
   }
 
-  public function scopeIfHasSystemChargesServiceIntegrationActive($query)
+  public function scopeWhereHasActiveSystemChargesServiceIntegration($query)
   {
     return $query->whereHas('service_integrations', function($query){
       $query
@@ -117,7 +117,7 @@ trait HasSystemChargesIntegrations
     ]);
   }
 
-  public function scopeWithSystemChargesServiceIntegrationIfActive($query)
+  public function scopeWithActiveSystemChargesServiceIntegration($query)
   {
     $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');
 
