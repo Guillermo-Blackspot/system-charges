@@ -4,9 +4,68 @@ namespace BlackSpot\SystemCharges\Relationships;
 
 use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
+use BlackSpot\SystemCharges\Models\SystemSubscription;
 
 trait HasSystemChargesIntegrations
 {
+  /**
+   * Boot on delete method
+   */
+  public static function bootHasSystemChargesIntegrations()
+  {
+    static::deleting(function ($model) {
+      if (method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting()) {
+        return;
+      }
+      $model->system_subscriptions()
+              ->where('status', '!=', SystemSubscription::STATUS_UNLINKED)
+              ->where('status', '!=', SystemSubscription::STATUS_CANCELED)
+              ->update([
+                'service_integration_id' => null,
+                'status' => SystemSubscription::STATUS_UNLINKED
+              ]);
+
+      $model->system_payment_intents()
+            ->getQuery()
+            ->update([
+              'service_integration_id' => null
+            ]);
+    });
+  }
+
+  /**
+   * ------------------------------------------
+   * Eloquent relationships
+   * ------------------------------------------
+   */
+
+  /**
+   * Get the system subscriptions of the service integration
+   *
+   * @return void
+   */
+  public function system_subscriptions()
+  {
+    return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.subscription', SystemSubscription::class), 'service_integration_id');
+  }
+
+  /**
+   * Get the system subscriptions of the service integration
+   *
+   * @return void
+   */
+  public function system_payment_intents()
+  {
+    return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'service_integration_id');
+  }
+
+
+
+
+
+
+
   public function scopeSystemChargesService($query)
   {
       return $query->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
