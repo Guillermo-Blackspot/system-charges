@@ -53,7 +53,7 @@ trait ManagesCredentials
 
         // Try to resolve
         if (is_null($systemChargesIntegration)){
-            $systemChargesIntegration = $this->getStripeServiceIntegrationQuery($serviceIntegrationId)->first();
+            $systemChargesIntegration = $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId)->first();
         }
 
         if (is_null($systemChargesIntegration)) {
