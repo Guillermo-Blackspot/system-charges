@@ -45,11 +45,12 @@ class SystemSubscription extends Model
      */
     protected $casts = [
         'metadata'               => 'array',
-        'billing_cycle_anchor'   => 'datetime',
-        'current_period_start'   => 'datetime',
-        'current_period_ends_at' => 'datetime',
-        'trial_ends_at'          => 'datetime',
-        'cancel_at'              => 'datetime',
+        'billing_cycle_anchor'   => 'datetime:Y-m-d H:i:s',
+        'current_period_start'   => 'datetime:Y-m-d H:i:s',
+        'current_period_ends_at' => 'datetime:Y-m-d H:i:s',
+        'trial_ends_at'          => 'datetime:Y-m-d H:i:s',
+        'cancel_at'              => 'datetime:Y-m-d H:i:s',
+        'keep_products_active_until' => 'datetime:Y-m-d H:i:s',
     ];
 
     /**

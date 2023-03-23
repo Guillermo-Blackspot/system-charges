@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Closure;
 
 class SubscriptionBuilder
 {
@@ -74,7 +75,7 @@ class SubscriptionBuilder
     /**
      * The date on which the billing cycle should be anchored.
      *
-     * @var int|null
+     * @var \DateTimeInterface|null
      */
     protected $billingCycleAnchor = null;
 
@@ -169,7 +170,7 @@ class SubscriptionBuilder
         $this->name                   = $name;
         $this->items                  = $items instanceof EloquentModel ? Collection::make([$items]) : $items;
         $this->serviceIntegrationId   = $this->owner->getSystemChargesServiceIntegration($serviceIntegrationId)->id;
-        $this->billingCycleAnchor     = now();
+        $this->billingCycleAnchor     = Date::now();
 
         $existingRelatedSubscription = $this->owner->findSystemSubscriptionByIdentifier($this->serviceIntegrationId, $this->subscriptionIdentifier);
 
@@ -238,7 +239,7 @@ class SubscriptionBuilder
     public function anchorBillingCycleOn($date)
     {
         if (! $date) {
-            $date = now();
+            $date = Date::now();
         }
 
         if (! ($date instanceof DateTimeInterface)) {
@@ -374,7 +375,7 @@ class SubscriptionBuilder
     public function interval($interval)
     {
         if (!in_array($interval, ['day','week','month','year'])) {
-            throw InvalidSystemSubscription::unknownInterval($interval);
+            throw InvalidSystemSubscription::unknownInterval($this, $interval);
         }
 
         $this->recurringInterval = $interval;
@@ -452,6 +453,15 @@ class SubscriptionBuilder
         return $subscription;
     }
 
+    protected function fixDatabaseFormat($date)
+    {
+        if ($date instanceof DateTimeInterface) {
+            return $date->format('Y-m-d H:i:s');
+        }
+
+        return null;
+    }
+
     /**
      * Create the Eloquent Subscription.
      *
@@ -465,12 +475,12 @@ class SubscriptionBuilder
             'name'                       => $this->name,
             'description'                => $this->description,
             'status'                     => SystemSubscription::STATUS_INCOMPLETE,
-            'billing_cycle_anchor'       => $this->billingCycleAnchor,
-            'current_period_start'       => $this->billingCycleAnchor,
-            'current_period_ends_at'     => $this->getCurrentPeriodEndsAtForPayload(),
-            'trial_ends_at'              => $this->getTrialEndsAtForPayload(),
-            'cancel_at'                  => $this->getCancelAtForPayload(),
-            'keep_products_active_until' => $this->getKeepProductsActiveUntilForPayload(),            
+            'billing_cycle_anchor'       => $this->fixDatabaseFormat($this->billingCycleAnchor),
+            'current_period_start'       => $this->fixDatabaseFormat($this->billingCycleAnchor),
+            'current_period_ends_at'     => $this->fixDatabaseFormat($this->getCurrentPeriodEndsAtForPayload()),
+            'trial_ends_at'              => $this->fixDatabaseFormat($this->getTrialEndsAtForPayload()),
+            'cancel_at'                  => $this->fixDatabaseFormat($this->getCancelAtForPayload()),
+            'keep_products_active_until' => $this->fixDatabaseFormat($this->getKeepProductsActiveUntilForPayload()),            
             'recurring_interval'         => $this->getIntervalForPayload(),
             'recurring_interval_count'   => $this->recurringIntervalCount,
             'expected_invoices'          => $this->expectedInvoices,
@@ -572,7 +582,7 @@ class SubscriptionBuilder
 
         if (is_int($this->trialExpires)) {
             
-            return $this->billingCycleAnchor->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
+            return $this->billingCycleAnchor->copy()->addDays($this->trialExpires); // For days (int) Determine from the billing cycle anchor
 
         }else if ($this->trialExpires instanceof DateTimeInterface) {           
             
@@ -600,9 +610,8 @@ class SubscriptionBuilder
             return null;
         }
 
-
         if (is_int($this->keepProductsActiveUntil)) {
-            return $this->cancelAt->addDays($this->keepProductsActiveUntil);            
+            return $this->cancelAt->copy()->addDays($this->keepProductsActiveUntil);            
         }
             
         if ($this->keepProductsActiveUntil->gt($this->cancelAt)) {

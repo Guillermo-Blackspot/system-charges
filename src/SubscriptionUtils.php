@@ -5,6 +5,7 @@ namespace BlackSpot\SystemCharges;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
+use DateTimeInterface;
 
 class SubscriptionUtils
 {
@@ -22,7 +23,9 @@ class SubscriptionUtils
             return Date::now();
         }
 
-        $billingCycleAnchor = Date::parse($billingCycleAnchor);
+        if (! ($billingCycleAnchor instanceof DateTimeInterface)) {            
+            $billingCycleAnchor = Date::parse($billingCycleAnchor);
+        }
 
         if ($billingCycleAnchor->isPast() && ! $billingCycleAnchor->isToday()) {            
             $billingCycleAnchor = Date::now();
@@ -101,7 +104,7 @@ class SubscriptionUtils
             return null;  // never will be canceled, only when accumulates two pending invoices
         }
 
-        $billingCycleAnchor = static::resolveBillingCycleAnchor($billingCycleAnchor);
+        $billingCycleAnchor = static::resolveBillingCycleAnchor($billingCycleAnchor)->copy();
         $carbonFunction     = 'add'.(ucfirst($interval)).'s';  // addDays, addWeeks, addMonths, addYears
 
         if (! $intervalCount) {
@@ -126,11 +129,11 @@ class SubscriptionUtils
      * 
      * @return \DateTimeInterface
      */
-    public function calculateNextInvoice($interval, $intervalCount, $billingCycleAnchor)
+    public static function calculateNextInvoice($interval, $intervalCount, $billingCycleAnchor)
     {
-        $billingCycleAnchor = static::resolveBillingCycleAnchor($billingCycleAnchor);
+        $billingCycleAnchorCopy = static::resolveBillingCycleAnchor($billingCycleAnchor);
 
-        return static::calculateNextEndPeriod($interval, $intervalCount, $billingCycleAnchor);
+        return static::calculateNextEndPeriod($interval, $intervalCount, $billingCycleAnchorCopy);
     }
 
     /**
@@ -142,9 +145,14 @@ class SubscriptionUtils
      *
      * @return \DateTimeInterface
      */
-    public function calculateNextEndPeriod($interval, $intervalCount, $renewDate = null)
+    public static function calculateNextEndPeriod($interval, $intervalCount, $renewDate = null)
     {
-        $nextPeriod     = $renewDate ?? Date::now();
+        if ($renewDate && ! ($renewDate instanceof DateTimeInterface)) {
+            $nextPeriod = Date::parse($renewDate)->copy();
+        }else{
+            $nextPeriod = Date::now();
+        }
+
         $carbonFunction = 'add'.(ucfirst($interval)).'s';  // addDays, addWeeks, addMonths, addYears
 
         // Automatically add one day taking as reference the last day of the current period
