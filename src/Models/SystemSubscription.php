@@ -69,7 +69,7 @@ class SystemSubscription extends Model
     public const STATUS_CANCELED             = 'canceled';    
     public const STATUS_PAUSED               = 'paused';
     public const STATUS_UNLINKED             = 'unlinked';
-    public const STATUS_TRAILING             = 'trialing';
+    public const STATUS_TRIALING             = 'trialing';
 
     /**
      * Overwrite cast json method
@@ -93,7 +93,7 @@ class SystemSubscription extends Model
             case self::STATUS_UNPAID             : return 'No pagado, acumulando facturas';               break;
             case self::STATUS_PAUSED             : return 'Pausado';                                      break;
             case self::STATUS_UNLINKED           : return 'Desvinculado';                                 break;
-            case self::STATUS_TRAILING           : return 'En periodo de prueba';                         break;
+            case self::STATUS_TRIALING           : return 'En periodo de prueba';                         break;
             default                              : return 'Desconocido';                                  break;
         }
     }
