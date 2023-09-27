@@ -26,11 +26,7 @@ trait HasSystemChargesIntegrations
                 'status' => SystemSubscription::STATUS_UNLINKED
               ]);
 
-      $model->system_payment_intents()
-            ->getQuery()
-            ->update([
-              'service_integration_id' => null
-            ]);
+      $model->system_payment_intents()->update(['service_integration_id' => null]);
     });
   }
 
