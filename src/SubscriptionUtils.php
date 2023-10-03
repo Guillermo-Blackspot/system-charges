@@ -9,10 +9,8 @@ use DateTimeInterface;
 
 class SubscriptionUtils
 {
-
-
     /**
-     * Undocumented function
+     * Resolve billingCycleAnchor and if is null take the current time
      *
      * @param null|\DateTimeInterface|string $billingCycleAnchor
      * @return \DateTimeInterface
@@ -113,7 +111,7 @@ class SubscriptionUtils
 
         $cancelAt = $billingCycleAnchor;
         
-        for ($i = 0; $i < $expectedInvoices; $i++) { 
+        for ($i = 0; $i < ($expectedInvoices + 1); $i++) { 
             $cancelAt = $cancelAt->{$carbonFunction}($intervalCount); // every $intervalCount(2) months or any interval
         }
 

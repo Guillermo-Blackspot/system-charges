@@ -508,7 +508,7 @@ class SubscriptionBuilder
         /** @var \Stripe\SubscriptionItem $item */
         foreach ($this->items as $item) {
             $modelClass = get_class($item);        
-            $subItem    = $subscription->system_subscription_items()->updateOrcreate(
+            $subItem    = $subscription->system_subscription_items()->updateOrCreate(
                             [ 'model_id' => $item->id, 'model_type' => $modelClass],
                             [ 
                                 'quantity'    => 1,         

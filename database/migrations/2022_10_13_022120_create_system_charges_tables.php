@@ -48,6 +48,7 @@ class CreateSystemChargesTables extends Migration
             $table->string('amount');
             $table->string('payment_method'); //wire_t
             $table->string('status',10)->nullable(); 
+            $table->dateTime('paid_at')->nullable(); 
             $table->dateTime('due_date')->nullable(); 
             $table->json('metadata')->nullable();            
             $table->string('subscription_identifier')->nullable(); // when the system_subscription relationship is deleted preserve the subscription identifier in the record
@@ -97,16 +98,12 @@ class CreateSystemChargesTables extends Migration
         //
         Schema::table('system_subscriptions', function (Blueprint $table) {
             $table->dropForeign(['service_integration_id']);
-            $table->dropColumn('service_integration_id');            
         }); 
 
         Schema::dropIfExists('system_subscriptions');
 
         //
         Schema::table('system_payment_intents', function (Blueprint $table) {
-            $table->dropColumn('system_subscription_id');
-            $table->dropColumn('service_integration_id');
-
             $table->dropForeign(['system_subscription_id']);            
             $table->dropForeign(['service_integration_id']);
         });
@@ -116,7 +113,6 @@ class CreateSystemChargesTables extends Migration
         //
         Schema::table('system_subscription_items', function (Blueprint $table) {
             $table->dropForeign(['system_subscription_id']);
-            $table->dropColumn('system_subscription_id');
         }); 
 
         Schema::dropIfExists('system_subscription_items');

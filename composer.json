@@ -23,6 +23,6 @@
     },
     "minimum-stability": "dev",
     "require": {
-        "blackspot/service-integrations-container": "dev-master"
+        "blackspot/service-integrations-container": "dev-v2"
     }
 }

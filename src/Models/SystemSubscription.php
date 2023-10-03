@@ -9,13 +9,12 @@ use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
 use BlackSpot\SystemCharges\Models\SystemSubscriptionItem;
 use BlackSpot\SystemCharges\SubscriptionUtils;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
 class SystemSubscription extends Model
-{
-    use ManagesCredentials;
-    
+{   
     /**
      * The table associated with the model.
      *
@@ -62,14 +61,16 @@ class SystemSubscription extends Model
     
     public const SYSTEM_CHARGES_SERVICE_NAME = 'System_Charges';
     public const STATUS_ACTIVE               = 'active';
+    public const STATUS_ACTIVE_FOREVER       = 'active_forever';
     public const STATUS_INCOMPLETE           = 'incomplete';
-    public const STATUS_INCOMPLETE_EXPIRED   = 'incomplete_expired';
-    public const STATUS_PAST_DUE             = 'past_due';
     public const STATUS_UNPAID               = 'unpaid';
     public const STATUS_CANCELED             = 'canceled';    
     public const STATUS_PAUSED               = 'paused';
     public const STATUS_UNLINKED             = 'unlinked';
     public const STATUS_TRIALING             = 'trialing';
+    public const STATUS_RESTRICTED           = 'restricted';
+    public const STATUS_ACTIVE_NO_INVOICES   = 'active_no_invoices';
+    public const STATUS_PAST_DUE             = 'past_due';
 
     /**
      * Overwrite cast json method
@@ -85,16 +86,20 @@ class SystemSubscription extends Model
     public static function resolveStatusDescription($status)
     {
         switch ($status) {
-            case self::STATUS_INCOMPLETE         : return 'Primer cobro falló';                           break;
-            case self::STATUS_INCOMPLETE_EXPIRED : return 'Primer cobro falló y ya no puede reactivarse'; break;
-            case self::STATUS_ACTIVE             : return 'Activo';                                       break;
-            case self::STATUS_PAST_DUE           : return 'La renovación falló';                          break;
-            case self::STATUS_CANCELED           : return 'Cancelado';                                    break;
-            case self::STATUS_UNPAID             : return 'No pagado, acumulando facturas';               break;
-            case self::STATUS_PAUSED             : return 'Pausado';                                      break;
-            case self::STATUS_UNLINKED           : return 'Desvinculado';                                 break;
-            case self::STATUS_TRIALING           : return 'En periodo de prueba';                         break;
-            default                              : return 'Desconocido';                                  break;
+            // Permissive
+            case self::STATUS_ACTIVE             : return 'Activo';                                     break;
+            case self::STATUS_ACTIVE_FOREVER     : return 'Activo para siempre, sin seguir facturando'; break;
+            case self::STATUS_TRIALING           : return 'En periodo de prueba';                       break;
+            case self::STATUS_INCOMPLETE         : return 'Primer cobro falló';                         break;
+            case self::STATUS_UNPAID             : return 'No pagado, acumulando facturas';             break;            
+            case self::STATUS_ACTIVE_NO_INVOICES : return 'Activo, sin seguir facturando';              break;            
+            case self::STATUS_PAST_DUE           : return 'Renovación falló';                           break;            
+            // Restrict
+            case self::STATUS_RESTRICTED         : return 'Acceso restringido';                         break;
+            case self::STATUS_CANCELED           : return 'Cancelado';                                  break;
+            case self::STATUS_PAUSED             : return 'Pausado';                                    break;
+            case self::STATUS_UNLINKED           : return 'Desvinculado';                               break;
+            default                              : return 'Desconocido';                                break;
         }
     }
     /**
@@ -177,27 +182,7 @@ class SystemSubscription extends Model
     public function incomplete()
     {
         return $this->status === self::STATUS_INCOMPLETE;
-    }
-
-    /**
-     * Determine if the subscription is incomplete expired
-     *
-     * @return bool
-     */
-    public function incompleteExpired()
-    {
-        return $this->status === self::STATUS_INCOMPLETE_EXPIRED;
-    }
-
-    /**
-     * Determine if the subscription is past due.
-     *
-     * @return bool
-     */
-    public function pastDue()
-    {
-        return $this->status === self::STATUS_PAST_DUE;
-    }
+    }    
 
     /**
      * Determine if the subscription is no longer active.
@@ -239,8 +224,6 @@ class SystemSubscription extends Model
         return !$this->ended() &&
             $this->status !== self::STATUS_UNLINKED &&
             $this->status !== self::STATUS_INCOMPLETE &&
-            $this->status !== self::STATUS_INCOMPLETE_EXPIRED &&
-            $this->status !== self::STATUS_PAST_DUE &&
             $this->status !== self::STATUS_UNPAID;
     }
 
@@ -297,9 +280,13 @@ class SystemSubscription extends Model
      */
     public function createInvoiceIfNotExists($date)
     {
-        $invoiceExists = $this->system_payment_intents->some(fn ($invoice) => $invoice->created_at->eq($date));
+        if (is_string($date)) {
+            $date = Date::parse($date);
+        }
 
-        if (! $invoiceExists) {
+        $invoiceExists = $this->system_payment_intents->first(fn ($invoice) => $invoice->created_at->eq($date));
+
+        if (is_null($invoiceExists)) {
             $lastInvoice          = $this->system_payment_intents->sortBy(fn ($invoice) => $invoice->created_at)->values()->last();
             $lastInvoiceNumber    = $lastInvoice->metadata['invoice_number'];
             $currentInvoiceNumber = $lastInvoiceNumber + 1;
@@ -310,7 +297,7 @@ class SystemSubscription extends Model
             ]);
         } 
 
-        return null;
+        return $invoiceExists;
     }
 
     /**
@@ -444,6 +431,36 @@ class SystemSubscription extends Model
         $this->update([
             'status' => self::STATUS_PAUSED
         ]);
+    }
+
+    /**
+     * Determine if the subscription has an invoice
+     * of given date
+     *
+     * @return bool
+     */
+    public function hasInvoiceOfDate($date)
+    {
+        if (is_string($date)) {
+            $date = Date::parse($date);
+        }
+
+        return $this->system_payment_intents->some(fn ($invoice) => $invoice->created_at->eq($date));
+    }
+
+    /**
+     * Get the subscription invoice
+     * of given date
+     *
+     * @return \BlackSpot\SystemCharges\Models\SystemPaymentIntent
+     */
+    public function getInvoiceOfDate($date)
+    {
+        if (is_string($date)) {
+            $date = Date::parse($date);
+        }
+
+        return $this->system_payment_intents->first(fn ($invoice) => $invoice->created_at->eq($date));
     }
 
     /**
