@@ -96,31 +96,4 @@ trait HasSystemChargesIntegration
       throw InvalidSystemChargesServiceIntegration::isDisabled($this);
     }
   }
-
-  /**
-   * ------------------------------------
-   * Database
-   * ------------------------------------
-   */
-
-  /**
-   * Get the system subscriptions of the service integration
-   *
-   * @return void
-   */
-  public function system_subscriptions()
-  {
-    throw new \Exception('Subscriptions are disabled');
-    // return $this->hasMany(ServiceIntegrationContainer::getFromConfig('system_charges_models.subscription', SystemSubscription::class), 'service_integration_id');
-  }
-
-  /**
-   * Get the system subscriptions of the service integration
-   *
-   * @return void
-   */
-  public function system_payment_intents()
-  {
-    return $this->hasMany(ServiceIntegrationContainer::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'service_integration_id');
-  }
 }

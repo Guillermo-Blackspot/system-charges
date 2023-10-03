@@ -29,7 +29,7 @@ trait ManagesCredentials
      */
     protected function getSystemChargesServiceIntegrationQuery($serviceIntegrationId = null)
     {
-        return $this->getServiceIntegrationQuery($serviceIntegrationId, 'system_charges', function ($query) {
+        return $this->getServiceIntegrationQuery($serviceIntegrationId, 'system_charges', function (&$query) {
             $query->where([
                 'name'       => ServiceIntegration::SYSTEM_CHARGES_SERVICE,
                 'short_name' => ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME,
