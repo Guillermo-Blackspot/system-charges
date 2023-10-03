@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\DB;
  * 
  * @method getSystemChargesServiceIntegrationQuery($serviceIntegrationId = null)
  * @method getSystemChargesServiceIntegration($serviceIntegrationId = null)
- * @method assertSystemChargesServiceIntegrationExists($serviceIntegrationId = null)
- * @method getRelatedSystemChargesPayloadServiceIntegration($serviceIntegrationId = null)
+ * @method assertSystemChargesServiceExists($serviceIntegrationId = null)
+ * @method getSystemChargesPayloadService($serviceIntegrationId = null)
  */
 trait ManagesCredentials
 {
@@ -29,9 +29,12 @@ trait ManagesCredentials
      */
     protected function getSystemChargesServiceIntegrationQuery($serviceIntegrationId = null)
     {
-        return $this->getServiceIntegrationQueryFinder($serviceIntegrationId, 'system_charges')
-                    ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
-                    ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+        return $this->getServiceIntegrationQuery($serviceIntegrationId, 'system_charges', function ($query) {
+            $query->where([
+                'name'       => ServiceIntegration::SYSTEM_CHARGES_SERVICE,
+                'short_name' => ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME,
+            ]);
+        });
     }
 
     /**
@@ -46,31 +49,26 @@ trait ManagesCredentials
     public function getSystemChargesServiceIntegration($serviceIntegrationId = null)
     {
         if ($this->serviceIntegrationWasLoaded($serviceIntegrationId)) {
-            return $this->getServiceIntegrationLoaded($serviceIntegrationId);
+            return $this->getLoadedServiceIntegration($serviceIntegrationId);
         }
 
-        $systemChargesIntegration = $this->resolveServiceIntegrationFromInstance($this, $serviceIntegrationId);
+        $service = $this->resolveServiceIntegrationFromInstance($this, $serviceIntegrationId) ?? $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId)->first();
 
-        // Try to resolve
-        if (is_null($systemChargesIntegration)){
-            $systemChargesIntegration = $this->getSystemChargesServiceIntegrationQuery($serviceIntegrationId)->first();
-        }
-
-        if (is_null($systemChargesIntegration)) {
+        if ($service == null) {
             throw InvalidSystemChargesServiceIntegration::notYetCreated($this);
         }
 
         $payloadColumn = ServiceIntegrationsContainerProvider::getFromConfig('payload_colum','payload');
 
-        if (! isset($systemChargesIntegration->{$payloadColumn})) {
+        if (! isset($service->{$payloadColumn})) {
             throw InvalidSystemChargesServiceIntegration::payloadColumnNotFound($this, $payloadColumn);
         }
 
-        $payloadValue = $systemChargesIntegration->{$payloadColumn};
+        $payloadValue = $service->{$payloadColumn};
 
-        $systemChargesIntegration->{$payloadColumn.'_decoded'} = is_array($payloadValue) ? $payloadValue : json_decode($payloadValue, true);
+        $service->{$payloadColumn.'_decoded'} = is_array($payloadValue) ? $payloadValue : json_decode($payloadValue, true);
 
-        return $this->putServiceIntegrationFound($systemChargesIntegration);
+        return $this->putServiceIntegrationFound($service);
     }
 
     /**
@@ -80,7 +78,7 @@ trait ManagesCredentials
      *
      * @throws InvalidSystemChargesServiceIntegration
      */
-    public function assertSystemChargesServiceIntegrationExists($serviceIntegrationId = null)
+    public function assertSystemChargesServiceExists($serviceIntegrationId = null)
     {
         $this->getSystemChargesServiceIntegration($serviceIntegrationId);
     }
@@ -92,11 +90,9 @@ trait ManagesCredentials
      *
      * @throws InvalidSystemChargesServiceIntegration
      */
-    public function assertActiveSystemChargesServiceIntegrationExists($serviceIntegrationId = null)
+    public function assertActiveSystemChargesServiceExists($serviceIntegrationId = null)
     {
-        $isActive = $this->getSystemChargesServiceIntegration($serviceIntegrationId)->active;
-
-        if (! $isActive) {
+        if ($this->getSystemChargesServiceIntegration($serviceIntegrationId)->disabled()) {
             InvalidSystemChargesServiceIntegration::isDisabled($this);
         }
     }
@@ -109,7 +105,7 @@ trait ManagesCredentials
      * 
      * @throws InvalidSystemChargesServiceIntegration
      */
-    public function getRelatedSystemChargesPayloadServiceIntegration($serviceIntegrationId = null)
+    public function getSystemChargesPayloadService($serviceIntegrationId = null)
     {
         $stripeIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
         $payloadColumn     = ServiceIntegrationsContainerProvider::getFromConfig('payload_column','payload');

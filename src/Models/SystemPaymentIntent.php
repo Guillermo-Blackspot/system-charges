@@ -9,9 +9,7 @@ use BlackSpot\SystemCharges\Models\SystemSubscription;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemPaymentIntent extends Model
-{
-    use ManagesCredentials;
-    
+{   
     /**
      * The table associated with the model.
      *
@@ -87,7 +85,6 @@ class SystemPaymentIntent extends Model
     {
         return $this->morphTo('owner');
     }
-
 
     public function system_subscription()
     {

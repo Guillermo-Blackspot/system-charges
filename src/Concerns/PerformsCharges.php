@@ -50,7 +50,7 @@ trait PerformsCharges
 
         if (! in_array($options['payment_method'],['wire_t','in_sub','agree'])) {
             throw InvalidSystemPaymentMethod::notSupported($this, $options['payment_method']);
-        }        
+        }
 
         $serviceIntegration = $this->getSystemChargesServiceIntegration($serviceIntegrationId);
 
@@ -61,7 +61,6 @@ trait PerformsCharges
 
         if (isset($options['metadata'])) {
             $metadata = array_merge($metadata, $options['metadata']);
-
         }
         
         unset($options['metadata']);
@@ -72,7 +71,7 @@ trait PerformsCharges
             'status'                 => 'pen',
             'owner_name'             => $this->full_name ?? $this->name,
             'owner_email'            => $this->email,
-            'due_date'               => (isset($options['created_at']) ? Date::parse($options['created_at']) : Date::now())->addDays(3),
+            'due_date'               => (isset($options['created_at']) ? Date::parse($options['created_at'])->copy() : Date::now())->addDays(3),
             'service_integration_id' => $serviceIntegration->id,
             'metadata'               => $metadata
         ], $options);

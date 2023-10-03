@@ -1,6 +1,6 @@
 <?php
 
-namespace BlackSpot\SystemCharges\Relationships;
+namespace BlackSpot\SystemCharges\Concerns;
 
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
