@@ -8,15 +8,15 @@ use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
 
 trait BillableForSystemCharges
 {
-    protected $systemChargeServiceInstance;
+    protected $systemsChargeServiceInstance;
 
     public function usingSystemChargesService($serviceIntegration)
     {
-        if ($this->systemChargeServiceInstance !== null) {
-            return $this->systemChargeServiceInstance;
+        if ($this->systemsChargeServiceInstance !== null) {
+            return $this->systemsChargeServiceInstance;
         }
 
-        return $this->systemChargeServiceInstance = new SystemChargesService($serviceIntegration, $this);
+        return $this->systemsChargeServiceInstance = new SystemChargesService($serviceIntegration);
     }
 
     /**

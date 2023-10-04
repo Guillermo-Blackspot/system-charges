@@ -2,6 +2,7 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
+use BlackSpot\ServiceIntegrationsContainer\ServiceIntegration;
 use BlackSpot\SystemCharges\Services\SystemChargesService;
 
 /**
@@ -11,7 +12,7 @@ use BlackSpot\SystemCharges\Services\SystemChargesService;
  */
 trait HasSystemChargesIntegration
 {
-	protected $systemChargeServiceInstance;
+	protected $systemChargesServiceInstance;
 
 	/**
 	 * Boot on delete method
@@ -29,10 +30,27 @@ trait HasSystemChargesIntegration
 
 	public function getSystemChargesAttribute()
 	{
-		if ($this->systemChargeServiceInstance !== null) {
-			return $this->systemChargeServiceInstance;
+		if ($this->systemChargesServiceInstance !== null) {
+			return $this->systemChargesServiceInstance;
 		}
 
-		return $this->systemChargeServiceInstance = new SystemChargesService($this);
+		return $this->systemChargesServiceInstance = new SystemChargesService($this);
+	}
+
+	public function scopeWhereHasSystemChargesService($query)
+	{
+		return $query->whereHas('service_integrations', function($query) {
+			$query->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+				->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+		});
+	}
+
+	public function scopeWhereHasActiveSystemChargesService($query)
+	{
+		return $query->whereHas('service_integrations', function($query) {
+			$query->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+				->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME)
+				->where('active', true);
+		});
 	}
 }

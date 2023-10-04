@@ -1,24 +1,14 @@
 <?php 
 
-namespace BlackSpot\SystemCharges\Services;
+namespace BlackSpot\SystemCharges\Services\Traits;
 
 use BlackSpot\SystemCharges\Exceptions\InvalidSystemPaymentMethod;
 use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
-use BlackSpot\SystemCharges\Services\SystemChargesService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 
-class PaymentsService
+trait PerformCharges
 {
-    public $systemChargeService;
-    public $defaultBillable;
-
-    public function __construct(SystemChargesService $systemChargeService, ?Model $billable = null)
-    {
-        $this->systemChargeService = $systemChargeService;
-        $this->defaultBillable = $billable;
-    }
-
     public function createWireTransfer(Model $billable, $amount, $options = []) 
     {
         return $this->createWith($billable, SystemPaymentIntent::WIRE_TRANSFER, $amount, $options);
@@ -51,7 +41,7 @@ class PaymentsService
             throw InvalidSystemPaymentMethod::notSupported($this, $options['payment_method']);
         }
 
-        $serviceIntegration = $this->systemChargeService->getService();
+        $serviceIntegration = $this->getService();
 
         $metadata = [
             'owner_id'   => $billable->getKey(),
@@ -68,7 +58,7 @@ class PaymentsService
             'amount'                 => $amount,
             'paid'                   => false,
             'status'                 => 'pen',
-            'owner_name'             => $billable->full_name ?? $this->name,
+            'owner_name'             => $billable->full_name ?? $billable->name,
             'owner_email'            => $billable->email,
             'due_date'               => (isset($options['created_at']) ? Date::parse($options['created_at'])->copy() : Date::now())->addDays(3),
             'service_integration_id' => $serviceIntegration->id,

@@ -3,19 +3,21 @@
 namespace BlackSpot\SystemCharges\Services;
 
 use BlackSpot\ServiceIntegrationsContainer\ServiceIntegration;
+use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use BlackSpot\SystemCharges\Exceptions\InvalidSystemChargesServiceIntegration;
 use BlackSpot\SystemCharges\Services\PaymentsService;
+use BlackSpot\SystemCharges\Services\Traits\PerformCharges;
 use Illuminate\Database\Eloquent\Model;
 
 class SystemChargesService
 {
-    public $model;
-    public $payments;
+    use PerformCharges;
 
-    public function __construct(Model $model, ?Model $billable = null)
+    public $model;
+
+    public function __construct(Model $model)
     {
         $this->model = $model;
-        $this->payments = new PaymentsService($this, $billable);
     }
 
     /**
@@ -24,12 +26,20 @@ class SystemChargesService
 
     public function getService()
     {
+        if (get_class($this->model) == ServiceIntegrationsContainerProvider::getFromConfig('model', ServiceIntegration::class) ) {            
+            if ($this->model->name == ServiceIntegration::SYSTEM_CHARGES_SERVICE && $this->model->short_name == ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME) {
+                return $this->model;
+            }
+
+            throw InvalidStripeServiceIntegration::incorrectProvider($this->model);
+        }
+
         return $this->model->service_integrations
-              ->filter(function($service){
-                return $service->name == ServiceIntegration::SYSTEM_CHARGES_SERVICE && 
-                      $service->short_name ==ServiceIntegration ::SYSTEM_CHARGES_SERVICE_SHORT_NAME;
-              })
-              ->first();   
+                    ->filter(function($service){
+                        return $service->name == ServiceIntegration::SYSTEM_CHARGES_SERVICE && 
+                            $service->short_name ==ServiceIntegration ::SYSTEM_CHARGES_SERVICE_SHORT_NAME;
+                    })
+                    ->first();   
     }
 
     public function getServiceIfActive()

@@ -16,11 +16,11 @@ $options  = [
     'metadata' => []
 ];
 
-$subsidiary->systemCharges->payments->createWireTransfer($customer, $amount, $options);
-$subsidiary->systemCharges->payments->createPaymentInSubsidiary($customer, $amount, $options);            
-$subsidiary->systemCharges->payments->createAgreement($customer, $amount, $options);
-$subsidiary->systemCharges->payments->createWith($customer, $paymentMethod , $amount, $options);
-$subsidiary->systemCharges->payments->createPaymentIntent($customer, $amount, $options);
+$subsidiary->systemCharges->createWireTransfer($customer, $amount, $options);
+$subsidiary->systemCharges->createPaymentInSubsidiary($customer, $amount, $options);            
+$subsidiary->systemCharges->createAgreement($customer, $amount, $options);
+$subsidiary->systemCharges->createWith($customer, $paymentMethod , $amount, $options);
+$subsidiary->systemCharges->createPaymentIntent($customer, $amount, $options);
 
 ```
 
