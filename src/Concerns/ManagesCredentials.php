@@ -2,8 +2,8 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
-use BlackSpot\ServiceIntegrationsContainer\Concerns\ServiceIntegrationFinder;
-use BlackSpot\ServiceIntegrationsContainer\Models\ServiceIntegration;
+use BlackSpot\ServiceIntegrationsContainer\ServiceIntegrationFinder;
+use BlackSpot\ServiceIntegrationsContainer\ServiceIntegration;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
 use BlackSpot\SystemCharges\Exceptions\InvalidSystemChargesServiceIntegration;
 use Illuminate\Support\Facades\DB;
