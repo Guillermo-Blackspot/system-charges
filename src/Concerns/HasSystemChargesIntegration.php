@@ -96,4 +96,23 @@ trait HasSystemChargesIntegration
       throw InvalidSystemChargesServiceIntegration::isDisabled($this);
     }
   }
+
+  public function scopeWhereHasSystemChargesServiceIntegration($query)
+  {
+    return $query->whereHas('service_integrations', function($query){
+      $query
+        ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+        ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+    });
+  }
+
+  public function scopeWhereHasActiveSystemChargesServiceIntegration($query)
+  {
+    return $query->whereHas('service_integrations', function($query){
+      $query
+        ->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+        ->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME)
+        ->where('active', true);      
+    });
+  }
 }
