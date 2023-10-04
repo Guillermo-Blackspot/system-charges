@@ -1,6 +1,6 @@
 <?php 
 
-namespace BlackSpot\SystemCharges;
+namespace BlackSpot\SystemCharges\Concerns;
 
 use BlackSpot\SystemCharges\Services\SystemChargesService;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
