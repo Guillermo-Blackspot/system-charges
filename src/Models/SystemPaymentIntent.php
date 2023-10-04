@@ -43,6 +43,10 @@ class SystemPaymentIntent extends Model
 
     public const SYSTEM_CHARGES_SERVICE_NAME = 'System_Charges';
 
+    public const WIRE_TRANSFER = 'wire_t';
+    public const PAY_IN_SUBSIDIARY = 'in_sub';
+    public const AGREEMENT = 'agree';
+
     /**
      * Overwrite cast json method
      */
