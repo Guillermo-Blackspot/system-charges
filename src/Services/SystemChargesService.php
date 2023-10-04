@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class SystemChargesService
 {
     public $model;
-    protected $payments;
+    public $payments;
 
     public function __construct(Model $model, ?Model $billable = null)
     {
@@ -24,7 +24,7 @@ class SystemChargesService
 
     public function getService()
     {
-        return $this->service_integrations
+        return $this->model->service_integrations
               ->filter(function($service){
                 return $service->name == ServiceIntegration::SYSTEM_CHARGES_SERVICE && 
                       $service->short_name ==ServiceIntegration ::SYSTEM_CHARGES_SERVICE_SHORT_NAME;
@@ -55,14 +55,14 @@ class SystemChargesService
      * Assert
      */
 
-    public function assertSystemChargesServiceExists()
+    public function assertServiceExists()
     {
         if (! $this->hasService()) {
             throw InvalidSystemChargesServiceIntegration::notYetCreated($this->model);
         }
     }
 
-    public function assertActiveSystemChargesServiceExists()
+    public function assertServiceIsActive()
     {
         if (! $this->serviceIsActive()) {
             throw InvalidSystemChargesServiceIntegration::isDisabled($this->model);

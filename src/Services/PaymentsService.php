@@ -38,7 +38,7 @@ class PaymentsService
     {
         $options['payment_method'] = $paymentMethod;
         
-        return $this->createSystemPaymentIntent($billable, $amount, $options);
+        return $this->createPaymentIntent($billable, $amount, $options);
     }
 
     public function createPaymentIntent(Model $billable, $amount, $options)
@@ -47,7 +47,7 @@ class PaymentsService
             throw InvalidSystemPaymentMethod::isEmpty();
         }
 
-        if (! in_array($options['payment_method'],[SystemPaymentIntent::AGREEMENT , SystemPaymentIntent::WIRE_TRANSFER, SystemPaymentIntent::AGREEMENT])) {
+        if (! in_array($options['payment_method'],[SystemPaymentIntent::AGREEMENT , SystemPaymentIntent::WIRE_TRANSFER, SystemPaymentIntent::PAY_IN_SUBSIDIARY])) {
             throw InvalidSystemPaymentMethod::notSupported($this, $options['payment_method']);
         }
 

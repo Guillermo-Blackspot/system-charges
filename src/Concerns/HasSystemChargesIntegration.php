@@ -2,23 +2,12 @@
 
 namespace BlackSpot\SystemCharges\Concerns;
 
-use BlackSpot\ServiceIntegrationsContainer\ServiceIntegration;
-use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationContainer;
-use BlackSpot\SystemCharges\Exceptions\InvalidSystemChargesServiceIntegration;
-use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
-use BlackSpot\SystemCharges\Models\SystemSubscription;
+use BlackSpot\SystemCharges\Services\SystemChargesService;
 
 /**
  * Use in the subsidiary models
  * 
- * @method protected function searchSystemChargesService()
- * @method public function hasSystemChargesService() : boolean
- * @method public function hasActiveSystemChargesService() : boolean
- * @method public function getSystemChargesService() : object (\BlackSpot\ServiceIntegrationsContainer\ServiceIntegration)
- * @method public function getActiveSystemChargesService() : object (\BlackSpot\ServiceIntegrationsContainer\ServiceIntegration)
- * @method public function scopeSystemChargesService($query) : object
- * @method public function system_subscriptions() : object (HasMany)
- * @method public function system_payment_intents() : object (HasMany)
+ * @property public system_charges
  */
 trait HasSystemChargesIntegration
 {
