@@ -2,8 +2,10 @@
 
 namespace BlackSpot\SystemCharges;
 
-use Illuminate\Support\ServiceProvider as LaravelProvider;
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
+use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
+use BlackSpot\SystemCharges\SystemPaymentIntentObserver;
+use Illuminate\Support\ServiceProvider as LaravelProvider;
 
 class ServiceProvider extends LaravelProvider
 {
@@ -27,6 +29,10 @@ class ServiceProvider extends LaravelProvider
     {
         $this->registerConfig();
         $this->registerPublishables();
+
+        $paymentIntentClass = ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class);
+        $paymentIntentClass = new '\\'.$paymentIntentClass;
+        $paymentIntentClass::observe(SystemPaymentIntentObserver::class);
     }
 
     protected function registerConfig()
