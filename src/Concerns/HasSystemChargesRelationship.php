@@ -1,9 +1,8 @@
 <?php 
 
-namespace BlackSpot\StripeMultipleAccounts\Concerns;
+namespace BlackSpot\SystemCharges\Concerns;
 
 use BlackSpot\ServiceIntegrationsContainer\ServiceProvider as ServiceIntegrationsContainerProvider;
-use BlackSpot\StripeMultipleAccounts\Models\StripeCustomer;
 use BlackSpot\SystemCharges\Models\SystemPaymentIntent;
 
 trait HasSystemChargesRelationship
@@ -21,6 +20,6 @@ trait HasSystemChargesRelationship
 
     public function system_payment_intents()
     {
-        return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'service_integration_id');           
+        return $this->hasMany(ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class), 'service_integration_id');
     }
 }
