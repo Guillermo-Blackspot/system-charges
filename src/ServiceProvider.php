@@ -30,8 +30,8 @@ class ServiceProvider extends LaravelProvider
         $this->registerConfig();
         $this->registerPublishables();
 
-        $paymentIntentClass = ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class);
-        $paymentIntentClass = new '\\'.$paymentIntentClass;
+        $paymentIntentClass = '\\' . ServiceIntegrationsContainerProvider::getFromConfig('system_charges_models.payment_intent', SystemPaymentIntent::class);
+        $paymentIntentClass = new $paymentIntentClass;
         $paymentIntentClass::observe(SystemPaymentIntentObserver::class);
     }
 
