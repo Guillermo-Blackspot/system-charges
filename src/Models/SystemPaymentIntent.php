@@ -43,9 +43,17 @@ class SystemPaymentIntent extends Model
 
     public const SYSTEM_CHARGES_SERVICE_NAME = 'System_Charges';
 
+    // Payment methods
     public const WIRE_TRANSFER = 'wire_t';
     public const PAY_IN_SUBSIDIARY = 'in_sub';
     public const AGREEMENT = 'agree';
+    public const PAYMENT_AGAINST_DELIVERY 'pay_ag_del';
+
+    // Status
+    public const PENDING_STATUS = 'pen';
+    public const PAID_STATUS = 'pai';
+    public const EXPIRED_STATUS = 'exp';
+
 
     /**
      * Overwrite cast json method
@@ -54,14 +62,24 @@ class SystemPaymentIntent extends Model
     {
         return json_encode($value, JSON_UNESCAPED_UNICODE);
     }
+
+    public static function getSupportedPaymentMethods()
+    {
+        return  [
+            self::WIRE_TRANSFER, 
+            self::PAY_IN_SUBSIDIARY, 
+            self::AGREEMENT, 
+            self::PAYMENT_AGAINST_DELIVERY
+        ];
+    }
     
     public function getReadableStatusAttribute()
     {        
-        if ($this->status == 'pen') {
+        if ($this->status == self::PENDING_STATUS) {
             return 'Pendiente';
-        }else if ($this->status == 'pai') {
+        }else if ($this->status == self::PAID_STATUS) {
             return 'Pagado';
-        }else if ($this->status == 'exp') {
+        }else if ($this->status == self::EXPIRED_STATUS) {
             return 'Expirado';
         }else{
             return 'No válido';
@@ -70,12 +88,14 @@ class SystemPaymentIntent extends Model
 
     public function getReadablePaymentMethodAttribute()
     {
-        if ($this->payment_method == 'wire_t') {
+        if ($this->payment_method == self::WIRE_TRANSFER) {
             return 'Transferencia bancaria';
-        }elseif ($this->payment_method == 'in_sub') {
+        }elseif ($this->payment_method == self::PAY_IN_SUBSIDIARY) {
             return 'Pago en sucursal';            
-        }elseif ($this->payment_method == 'agree') {
+        }elseif ($this->payment_method == self::AGREEMENT) {
             return 'Pago por acuerdo (Otro)';
+        }elseif ($this->payment_method == self::PAYMENT_AGAINST_DELIVERY) {
+            return 'Pago contra entrega';
         }else{
             return 'No válido';
         }

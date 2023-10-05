@@ -24,6 +24,11 @@ trait PerformCharges
         return $this->createWith($billable, SystemPaymentIntent::AGREEMENT, $amount, $options);
     }
 
+    public function createPaymentAgainstDelivery(Model $billable, $amount, $options = []) 
+    {
+        return $this->createWith($billable, SystemPaymentIntent::PAYMENT_AGAINST_DELIVERY, $amount, $options);
+    }
+
     public function createWith(Model $billable, $paymentMethod, $amount, $options = [])
     {
         $options['payment_method'] = $paymentMethod;
@@ -37,7 +42,7 @@ trait PerformCharges
             throw InvalidSystemPaymentMethod::isEmpty();
         }
 
-        if (! in_array($options['payment_method'],[SystemPaymentIntent::AGREEMENT , SystemPaymentIntent::WIRE_TRANSFER, SystemPaymentIntent::PAY_IN_SUBSIDIARY])) {
+        if (! in_array($options['payment_method'], SystemPaymentIntent::getSupportedPaymentMethods())) {
             throw InvalidSystemPaymentMethod::notSupported($this, $options['payment_method']);
         }
 
