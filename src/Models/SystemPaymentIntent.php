@@ -47,7 +47,7 @@ class SystemPaymentIntent extends Model
     public const WIRE_TRANSFER = 'wire_t';
     public const PAY_IN_SUBSIDIARY = 'in_sub';
     public const AGREEMENT = 'agree';
-    public const PAYMENT_AGAINST_DELIVERY 'pay_ag_del';
+    public const PAYMENT_AGAINST_DELIVERY = 'pay_ag_del';
 
     // Status
     public const PENDING_STATUS = 'pen';
