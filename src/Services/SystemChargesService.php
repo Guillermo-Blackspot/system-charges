@@ -47,7 +47,7 @@ class SystemChargesService
         $service = $this->getService();
         
         if ($service == null) return ;
-        if ($service->active()) return $service;
+        if ($service->active) return $service;
     }
 
     public function hasService()
@@ -57,7 +57,7 @@ class SystemChargesService
 
     public function serviceIsActive()
     {
-        return optional($this->getService())->active() == true;
+        return optional($this->getService())->active == true;
     }    
 
 
