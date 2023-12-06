@@ -37,12 +37,32 @@ trait HasSystemChargesIntegration
 		return $this->systemChargesServiceInstance = new SystemChargesService($this);
 	}
 
+	public function scopeWithSystemChargesServiceIntegration($query)
+	{
+		return $query->with([
+			'service_integrations' => function($query) {
+				$query->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
+					->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
+			}
+		]);
+	}
+
+	public function scopeWhereHasSystemChargesServiceIntegration($query)
+	{
+		return $this->scopeWhereHasSystemChargesService($query);
+	}
+
 	public function scopeWhereHasSystemChargesService($query)
 	{
 		return $query->whereHas('service_integrations', function($query) {
 			$query->where('name', ServiceIntegration::SYSTEM_CHARGES_SERVICE)
 				->where('short_name', ServiceIntegration::SYSTEM_CHARGES_SERVICE_SHORT_NAME);
 		});
+	}
+
+	public function scopeWhereHasActiveSystemChargesServiceIntegration($query)
+	{
+		return $this->scopeWhereHasActiveSystemChargesService($query);
 	}
 
 	public function scopeWhereHasActiveSystemChargesService($query)
